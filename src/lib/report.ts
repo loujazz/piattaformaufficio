@@ -33,10 +33,19 @@ export async function generateMonthlyReport(
   const monthAbsences = absenceEntries.filter((e) => e.date.startsWith(monthPrefix));
   const monthExpenses = expenseEntries.filter((e) => e.date.startsWith(monthPrefix));
 
+  const absencesByDate = new Map<string, string>();
+  for (const a of monthAbsences) {
+    const label = `${ABSENCE_TYPE_LABELS[a.type as AbsenceType] ?? a.type} (${a.amount})`;
+    absencesByDate.set(a.date, absencesByDate.has(a.date) ? `${absencesByDate.get(a.date)}; ${label}` : label);
+  }
+
   const rows: CellValue[][] = [];
   rows.push([`Report presenze — ${monthLabelIt(monthDate)}`]);
   rows.push([]);
-  rows.push(["Data", "Giorno", "Entrata", "Uscita", "Ore", "Attività", "Fuori sede"]);
+
+  const headerRow = ["Data", "Giorno", "Entrata", "Uscita", "Ore", "Attività", "Fuori sede"];
+  if (options.includeAbsences) headerRow.push("Assenza");
+  rows.push(headerRow);
 
   let totalMinutes = 0;
   for (let day = 1; day <= daysInMonth(monthDate); day++) {
@@ -44,7 +53,7 @@ export async function generateMonthlyReport(
     const iso = toISODate(date);
     const entry = timeByDate.get(iso);
     if (entry) totalMinutes += entry.minutesWorked;
-    rows.push([
+    const row: CellValue[] = [
       iso,
       dayLabelIt(date),
       entry?.checkIn ?? "",
@@ -52,24 +61,13 @@ export async function generateMonthlyReport(
       entry ? formatMinutes(entry.minutesWorked) : "",
       entry?.activityNote ?? "",
       entry?.offSite ? entry.offSiteLocation : "",
-    ]);
+    ];
+    if (options.includeAbsences) row.push(absencesByDate.get(iso) ?? "");
+    rows.push(row);
   }
 
   rows.push([]);
   rows.push(["Totale ore mese", formatMinutes(totalMinutes)]);
-
-  if (options.includeAbsences) {
-    rows.push([]);
-    rows.push(["Assenze del mese"]);
-    rows.push(["Data", "Tipo", "Quantità", "Note"]);
-    if (monthAbsences.length === 0) {
-      rows.push(["Nessuna assenza registrata"]);
-    } else {
-      for (const a of monthAbsences) {
-        rows.push([a.date, ABSENCE_TYPE_LABELS[a.type as AbsenceType] ?? a.type, a.amount, a.note]);
-      }
-    }
-  }
 
   if (options.includeExpenses) {
     rows.push([]);
