@@ -1,8 +1,8 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
-import { type AccessToken, requestAccessToken } from "../lib/googleAuth";
+import { onGoogleIdentityReady, type AccessToken, requestAccessToken } from "../lib/googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "../lib/googleUserInfo";
 
-export type AuthStatus = "signed-out" | "signing-in" | "signed-in" | "error";
+export type AuthStatus = "checking" | "signed-out" | "signing-in" | "signed-in" | "error";
 
 export interface UseGoogleAuthResult {
   status: AuthStatus;
@@ -21,7 +21,7 @@ export interface UseGoogleAuthResult {
  * nel resto dell'app.
  */
 export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
-  const [status, setStatus] = useState<AuthStatus>("signed-out");
+  const [status, setStatus] = useState<AuthStatus>("checking");
   const [token, setToken] = useState<AccessToken | null>(null);
   const [userInfo, setUserInfo] = useState<GoogleUserInfo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -67,6 +67,21 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
   useEffect(() => {
     handleTokenRef.current = handleToken;
   }, [handleToken]);
+
+  // Al primo caricamento tenta un login silenzioso: se il browser ha ancora la
+  // sessione Google attiva e il consenso già dato in precedenza, l'utente
+  // risulta subito collegato senza dover ricliccare "Accedi con Google" ogni
+  // volta che ricarica la pagina. Se fallisce, si torna al login esplicito.
+  useEffect(() => {
+    return onGoogleIdentityReady(() => {
+      requestAccessToken(
+        clientId,
+        true,
+        (t) => handleTokenRef.current(t),
+        () => setStatus("signed-out"),
+      );
+    });
+  }, [clientId]);
 
   // Recupera nome e foto profilo per mostrarli in testata; non critico per il
   // resto dell'app, quindi un fallimento qui viene semplicemente ignorato.

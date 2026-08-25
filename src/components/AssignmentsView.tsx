@@ -47,8 +47,7 @@ export function AssignmentsView({ accessToken, spreadsheetId }: AssignmentsViewP
         <thead>
           <tr>
             <th>Data</th>
-            <th>Turno</th>
-            <th>Attività</th>
+            <th>Titolo</th>
           </tr>
         </thead>
         <tbody>
@@ -57,13 +56,12 @@ export function AssignmentsView({ accessToken, spreadsheetId }: AssignmentsViewP
               <td>
                 {dayLabelIt(parseISODate(a.date))} {a.date}
               </td>
-              <td>{a.checkIn && a.checkOut ? `${a.checkIn}–${a.checkOut}` : "—"}</td>
-              <td>{a.activityNote || "—"}</td>
+              <td>{a.assignmentTitle || "Incarico"}</td>
             </tr>
           ))}
           {assignments.length === 0 && !loading && (
             <tr>
-              <td colSpan={3}>Nessun incarico registrato.</td>
+              <td colSpan={2}>Nessun incarico registrato.</td>
             </tr>
           )}
         </tbody>

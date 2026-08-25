@@ -33,6 +33,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
   const [offSite, setOffSite] = useState(false);
   const [offSiteLocation, setOffSiteLocation] = useState("");
   const [assignmentLink, setAssignmentLink] = useState("");
+  const [assignmentTitle, setAssignmentTitle] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     setOffSite(false);
     setOffSiteLocation("");
     setAssignmentLink("");
+    setAssignmentTitle("");
   }, []);
 
   const loadSegments = useCallback(async () => {
@@ -116,6 +118,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     setOffSite(segment.offSite);
     setOffSiteLocation(segment.offSiteLocation);
     setAssignmentLink(segment.assignmentLink);
+    setAssignmentTitle(segment.assignmentTitle);
     setFormError(null);
     setSavedMessage(null);
   }, []);
@@ -182,6 +185,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
           offSiteLocation: offSite ? offSiteLocation.trim() : "",
           isWeekendOverride: dayInfo.nonWorking ? weekendOverride : false,
           assignmentLink: assignmentLink.trim(),
+          assignmentTitle: assignmentTitle.trim(),
         },
         editingRowNumber,
       );
@@ -203,6 +207,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     offSite,
     offSiteLocation,
     assignmentLink,
+    assignmentTitle,
     dayInfo,
     editingRowNumber,
     loadSegments,
@@ -256,7 +261,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
                     {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
                     {segment.assignmentLink && (
                       <a className="segment-tag" href={segment.assignmentLink} target="_blank" rel="noreferrer">
-                        📄 Incarico
+                        📄 {segment.assignmentTitle || "Incarico"}
                       </a>
                     )}
                     {segment.activityNote && <span className="segment-note">{segment.activityNote}</span>}
@@ -323,6 +328,16 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
               />
             </label>
           )}
+
+          <label className="field">
+            Titolo incarico
+            <input
+              type="text"
+              value={assignmentTitle}
+              onChange={(e) => setAssignmentTitle(e.target.value)}
+              placeholder="Es. Corso di formazione, Missione a..."
+            />
+          </label>
 
           <label className="field">
             Incarico (link Drive)

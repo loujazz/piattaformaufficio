@@ -40,6 +40,21 @@ declare global {
 
 let tokenClient: TokenClient | null = null;
 
+/** Richiama callback appena Google Identity Services è disponibile (lo script è caricato con `async defer`). */
+export function onGoogleIdentityReady(callback: () => void): () => void {
+  if (window.google?.accounts?.oauth2) {
+    callback();
+    return () => {};
+  }
+  const interval = setInterval(() => {
+    if (window.google?.accounts?.oauth2) {
+      clearInterval(interval);
+      callback();
+    }
+  }, 100);
+  return () => clearInterval(interval);
+}
+
 function getTokenClient(
   clientId: string,
   onToken: (token: AccessToken) => void,

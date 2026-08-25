@@ -106,7 +106,13 @@ function App() {
         </div>
       </header>
 
-      {status !== "signed-in" && (
+      {status === "checking" && (
+        <section>
+          <p className="hint">Verifica sessione in corso...</p>
+        </section>
+      )}
+
+      {status !== "signed-in" && status !== "checking" && (
         <section>
           <p>Accedi con il tuo account Google per collegarti al foglio presenze.</p>
           <button onClick={login} disabled={status === "signing-in"}>

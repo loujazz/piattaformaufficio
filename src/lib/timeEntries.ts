@@ -10,11 +10,12 @@ export interface TimeEntry {
   offSiteLocation: string;
   isWeekendOverride: boolean;
   assignmentLink: string; // link Drive al PDF dell'incarico per quel turno, opzionale
+  assignmentTitle: string; // etichetta dell'incarico, usata nella scheda Incarichi
   rowNumber: number; // numero di riga nel foglio (1-based, header = riga 1)
 }
 
 const SHEET = "TimeEntries";
-const DATA_RANGE = `${SHEET}!A2:I`;
+const DATA_RANGE = `${SHEET}!A2:J`;
 
 function toMinutesSinceMidnight(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
@@ -46,6 +47,7 @@ function parseRow(row: string[], rowNumber: number): TimeEntry {
     offSiteLocation: row[6] ?? "",
     isWeekendOverride: isTrue(row[7]),
     assignmentLink: row[8] ?? "",
+    assignmentTitle: row[9] ?? "",
     rowNumber,
   };
 }
@@ -124,12 +126,13 @@ export async function saveTimeEntry(
       entry.offSiteLocation,
       entry.isWeekendOverride,
       entry.assignmentLink,
+      entry.assignmentTitle,
     ],
   ];
   if (rowNumber !== null) {
-    await updateValues(accessToken, spreadsheetId, `${SHEET}!A${rowNumber}:I${rowNumber}`, values);
+    await updateValues(accessToken, spreadsheetId, `${SHEET}!A${rowNumber}:J${rowNumber}`, values);
   } else {
-    await appendValues(accessToken, spreadsheetId, `${SHEET}!A:I`, values);
+    await appendValues(accessToken, spreadsheetId, `${SHEET}!A:J`, values);
   }
 }
 
