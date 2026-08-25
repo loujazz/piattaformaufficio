@@ -14,6 +14,8 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
   const [checkOut, setCheckOut] = useState("");
   const [activityNote, setActivityNote] = useState("");
   const [weekendOverride, setWeekendOverride] = useState(false);
+  const [offSite, setOffSite] = useState(false);
+  const [offSiteLocation, setOffSiteLocation] = useState("");
   const [rowNumber, setRowNumber] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -40,12 +42,16 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
         setCheckOut(stored.entry.checkOut);
         setActivityNote(stored.entry.activityNote);
         setWeekendOverride(stored.entry.isWeekendOverride);
+        setOffSite(stored.entry.offSite);
+        setOffSiteLocation(stored.entry.offSiteLocation);
         setRowNumber(stored.rowNumber);
       } else {
         setCheckIn("");
         setCheckOut("");
         setActivityNote("");
         setWeekendOverride(false);
+        setOffSite(false);
+        setOffSiteLocation("");
         setRowNumber(null);
       }
     } catch (err) {
@@ -77,6 +83,10 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
       setFormError("Questo giorno non è lavorativo (weekend o festività). Spunta la conferma per registrare comunque le ore.");
       return;
     }
+    if (offSite && !offSiteLocation.trim()) {
+      setFormError("Indica il luogo della trasferta.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -90,8 +100,8 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
           checkOut,
           minutesWorked,
           activityNote,
-          offSite: false,
-          offSiteLocation: "",
+          offSite,
+          offSiteLocation: offSite ? offSiteLocation.trim() : "",
           isWeekendOverride: dayInfo.nonWorking ? weekendOverride : false,
         },
         rowNumber,
@@ -103,7 +113,20 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
     } finally {
       setSaving(false);
     }
-  }, [accessToken, spreadsheetId, date, checkIn, checkOut, activityNote, weekendOverride, dayInfo, rowNumber, loadEntry]);
+  }, [
+    accessToken,
+    spreadsheetId,
+    date,
+    checkIn,
+    checkOut,
+    activityNote,
+    weekendOverride,
+    offSite,
+    offSiteLocation,
+    dayInfo,
+    rowNumber,
+    loadEntry,
+  ]);
 
   const livePreviewMinutes = checkIn && checkOut && checkOut > checkIn ? computeMinutesWorked(checkIn, checkOut) : null;
 
@@ -153,6 +176,23 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
             <label className="checkbox-field">
               <input type="checkbox" checked={weekendOverride} onChange={(e) => setWeekendOverride(e.target.checked)} />
               Registra comunque le ore per questo giorno (evento/missione)
+            </label>
+          )}
+
+          <label className="checkbox-field">
+            <input type="checkbox" checked={offSite} onChange={(e) => setOffSite(e.target.checked)} />
+            Fuori sede (trasferta)
+          </label>
+
+          {offSite && (
+            <label className="field">
+              Luogo
+              <input
+                type="text"
+                value={offSiteLocation}
+                onChange={(e) => setOffSiteLocation(e.target.value)}
+                placeholder="Dove ti trovi..."
+              />
             </label>
           )}
 

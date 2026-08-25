@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { AbsencesView } from "./components/AbsencesView";
 import { DailyTimeEntry } from "./components/DailyTimeEntry";
+import { ExpensesView } from "./components/ExpensesView";
 import { MonthlyView } from "./components/MonthlyView";
 import { WeeklyView } from "./components/WeeklyView";
 import { useGoogleAuth } from "./hooks/useGoogleAuth";
@@ -12,7 +13,7 @@ const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID;
 
 const EXPECTED_TABS = ["TimeEntries", "AbsenceEntries", "ExpenseEntries", "LeaveConfig", "ReportTemplate"];
 
-type ViewName = "daily" | "weekly" | "monthly" | "absences";
+type ViewName = "daily" | "weekly" | "monthly" | "absences" | "expenses";
 
 interface ConnectionCheck {
   spreadsheetTitle: string;
@@ -95,12 +96,16 @@ function App() {
             <button className={view === "absences" ? "active" : undefined} onClick={() => setView("absences")}>
               Assenze
             </button>
+            <button className={view === "expenses" ? "active" : undefined} onClick={() => setView("expenses")}>
+              Spese
+            </button>
           </nav>
 
           {view === "daily" && <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "weekly" && <WeeklyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "monthly" && <MonthlyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "absences" && <AbsencesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "expenses" && <ExpensesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
 
           <details className="diagnostics">
             <summary>Diagnostica collegamento foglio</summary>

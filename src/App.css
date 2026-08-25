@@ -107,9 +107,20 @@ button {
   text-align: left;
 }
 
-.leave-balances {
+.leave-balances,
+.expense-form,
+.expenses-summary {
   margin-top: 2rem;
   text-align: left;
+}
+
+.totals-table {
+  max-width: 24rem;
+}
+
+.entries-table {
+  overflow-x: auto;
+  display: block;
 }
 
 .entries-table tr.negative td {
