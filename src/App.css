@@ -16,13 +16,21 @@
 
 /* ---------- Testata ---------- */
 
-.app > h1 {
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.app-header h1 {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.app > h1::before {
+.app-header h1::before {
   content: 'P';
   width: 30px;
   height: 30px;
@@ -36,6 +44,20 @@
   align-items: center;
   justify-content: center;
   letter-spacing: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-toggle {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin: 0;
 }
 
 /* ---------- Bottoni ---------- */
@@ -65,11 +87,8 @@ button:disabled {
   cursor: default;
 }
 
-/* Azione principale: l'ultimo bottone di ogni form (Salva/Aggiorna/Genera). */
-.daily-entry > button,
-.absence-form > button,
-.expense-form > button,
-.export-view > button {
+/* Azione principale di ogni form (Salva/Aggiorna/Genera). */
+.primary-button {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
@@ -79,10 +98,7 @@ button:disabled {
   margin-top: 20px;
 }
 
-.daily-entry > button:hover:not(:disabled),
-.absence-form > button:hover:not(:disabled),
-.expense-form > button:hover:not(:disabled),
-.export-view > button:hover:not(:disabled) {
+.primary-button:hover:not(:disabled) {
   filter: brightness(1.06);
   background: var(--accent);
   border-color: var(--accent);
@@ -118,12 +134,11 @@ button:disabled {
 }
 
 .logout {
-  float: right;
   min-height: 38px;
   padding: 0 14px;
   font-size: 0.85rem;
   color: var(--text-soft);
-  margin-top: -46px;
+  margin: 0;
 }
 
 /* ---------- Navigazione viste ---------- */
@@ -264,6 +279,88 @@ button:disabled {
 .field textarea:hover,
 .field select:hover {
   border-color: var(--border-strong);
+}
+
+/* Selettore diretto di settimana/mese, accanto ai bottoni prec/succ. */
+.week-picker,
+.month-picker {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-h);
+  background: var(--surface);
+  padding: 0 12px;
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+/* Seconda intestazione dentro una sezione (es. "Assenze registrate" sotto ai saldi). */
+.section-spacer {
+  margin-top: 32px;
+}
+
+/* ---------- Turni multipli (giornate miste) ---------- */
+
+.segments-list {
+  margin-top: 4px;
+}
+
+.segments-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.segments-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+.segments-list li.editing {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.segment-time {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.segment-tag {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+  padding: 2px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+
+.segment-note {
+  color: var(--text-soft);
+  flex-basis: 100%;
+}
+
+.segment-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.segment-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.8rem;
 }
 
 /* Entrata / Uscita affiancate: sono un'unica decisione. */

@@ -6,8 +6,12 @@ import { ExportView } from "./components/ExportView";
 import { MonthlyView } from "./components/MonthlyView";
 import { WeeklyView } from "./components/WeeklyView";
 import { useGoogleAuth } from "./hooks/useGoogleAuth";
+import { useTheme } from "./hooks/useTheme";
 import { getSpreadsheetMeta, getValues, SheetsApiError } from "./lib/googleSheetsApi";
 import "./App.css";
+
+const THEME_ICON = { system: "🌗", light: "☀️", dark: "🌙" } as const;
+const THEME_LABEL = { system: "Automatico", light: "Chiaro", dark: "Scuro" } as const;
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID;
@@ -25,6 +29,7 @@ interface ConnectionCheck {
 function App() {
   const missingConfig = !CLIENT_ID || !SPREADSHEET_ID;
   const { status, accessToken, errorMessage, login, logout } = useGoogleAuth(CLIENT_ID);
+  const { theme, cycleTheme } = useTheme();
   const [view, setView] = useState<ViewName>("daily");
 
   const [check, setCheck] = useState<ConnectionCheck | null>(null);
@@ -52,10 +57,19 @@ function App() {
     }
   }, [accessToken]);
 
+  const themeToggle = (
+    <button type="button" className="theme-toggle" onClick={cycleTheme} title={`Tema: ${THEME_LABEL[theme]}`}>
+      {THEME_ICON[theme]} {THEME_LABEL[theme]}
+    </button>
+  );
+
   if (missingConfig) {
     return (
       <main className="app">
-        <h1>Presenze Marconi</h1>
+        <header className="app-header">
+          <h1>Presenze Marconi</h1>
+          <div className="header-actions">{themeToggle}</div>
+        </header>
         <p className="error">
           Configurazione mancante: crea un file <code>.env</code> partendo da <code>.env.example</code> e imposta{" "}
           <code>VITE_GOOGLE_CLIENT_ID</code> e <code>VITE_SPREADSHEET_ID</code>.
@@ -66,7 +80,17 @@ function App() {
 
   return (
     <main className="app">
-      <h1>Presenze Marconi</h1>
+      <header className="app-header">
+        <h1>Presenze Marconi</h1>
+        <div className="header-actions">
+          {themeToggle}
+          {status === "signed-in" && (
+            <button className="logout" onClick={logout}>
+              Esci
+            </button>
+          )}
+        </div>
+      </header>
 
       {status !== "signed-in" && (
         <section>
@@ -80,10 +104,6 @@ function App() {
 
       {status === "signed-in" && accessToken && (
         <>
-          <button className="logout" onClick={logout}>
-            Esci
-          </button>
-
           <nav className="view-tabs">
             <button className={view === "daily" ? "active" : undefined} onClick={() => setView("daily")}>
               Giornaliera

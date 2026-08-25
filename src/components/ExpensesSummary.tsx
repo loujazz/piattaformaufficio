@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
-import { REIMBURSEMENT_STATUS_LABELS, listExpenseEntries, type ExpenseEntry } from "../lib/expenses";
+import { REIMBURSEMENT_STATUS_LABELS, deleteExpenseEntry, listExpenseEntries, type ExpenseEntry } from "../lib/expenses";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 
 interface ExpensesSummaryProps {
@@ -17,6 +17,7 @@ export function ExpensesSummary({ accessToken, spreadsheetId, refreshKey }: Expe
   const [entries, setEntries] = useState<ExpenseEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingRowNumber, setDeletingRowNumber] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,6 +37,23 @@ export function ExpensesSummary({ accessToken, spreadsheetId, refreshKey }: Expe
     });
     // refreshKey forza un ricaricamento dopo il salvataggio di una nuova spesa dal form.
   }, [load, refreshKey]);
+
+  const handleDelete = useCallback(
+    async (rowNumber: number) => {
+      if (!window.confirm("Eliminare questa spesa? L'operazione non è reversibile.")) return;
+      setDeletingRowNumber(rowNumber);
+      setError(null);
+      try {
+        await deleteExpenseEntry(accessToken, spreadsheetId, rowNumber);
+        await load();
+      } catch (err) {
+        setError(err instanceof SheetsApiError ? err.message : "Errore nell'eliminazione.");
+      } finally {
+        setDeletingRowNumber(null);
+      }
+    },
+    [accessToken, spreadsheetId, load],
+  );
 
   const yearEntries = useMemo(
     () =>
@@ -95,11 +113,12 @@ export function ExpensesSummary({ accessToken, spreadsheetId, refreshKey }: Expe
             <th>Ricevuta</th>
             <th>Stato</th>
             <th>Rimborsato</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {yearEntries.map((e, i) => (
-            <tr key={`${e.date}-${i}`}>
+          {yearEntries.map((e) => (
+            <tr key={e.rowNumber}>
               <td>{e.missionRef || "—"}</td>
               <td>{e.date}</td>
               <td>{formatCurrency(e.amount)}</td>
@@ -115,11 +134,20 @@ export function ExpensesSummary({ accessToken, spreadsheetId, refreshKey }: Expe
               </td>
               <td>{REIMBURSEMENT_STATUS_LABELS[e.reimbursementStatus]}</td>
               <td>{formatCurrency(e.reimbursedAmount)}</td>
+              <td>
+                <button
+                  type="button"
+                  onClick={() => void handleDelete(e.rowNumber)}
+                  disabled={deletingRowNumber === e.rowNumber}
+                >
+                  {deletingRowNumber === e.rowNumber ? "Eliminazione..." : "Elimina"}
+                </button>
+              </td>
             </tr>
           ))}
           {yearEntries.length === 0 && !loading && (
             <tr>
-              <td colSpan={7}>Nessuna spesa registrata per {year}.</td>
+              <td colSpan={8}>Nessuna spesa registrata per {year}.</td>
             </tr>
           )}
         </tbody>

@@ -44,8 +44,9 @@
   }
 }
 
+/* Scuro automatico da preferenze di sistema, a meno che l'utente non abbia forzato "Chiaro" dal toggle. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --text: #9ca3af;
     --text-soft: #6b7280;
     --text-h: #f3f4f6;
@@ -67,6 +68,30 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
   }
+}
+
+/* Scuro forzato dal toggle manuale, indipendentemente dalle preferenze di sistema. */
+:root[data-theme='dark'] {
+  --text: #9ca3af;
+  --text-soft: #6b7280;
+  --text-h: #f3f4f6;
+  --bg: #16171d;
+  --surface: #1f2028;
+  --surface-2: #23252d;
+  --border: #2e303a;
+  --border-strong: #3f4250;
+  --accent: #c084fc;
+  --accent-text: #16171d;
+  --accent-bg: rgba(192, 132, 252, 0.15);
+  --accent-border: rgba(192, 132, 252, 0.45);
+  --ok: #8ee0a4;
+  --ok-bg: rgba(142, 224, 164, 0.12);
+  --warn: #e0c87e;
+  --warn-bg: rgba(224, 200, 126, 0.12);
+  --danger: #f0a8a0;
+  --danger-bg: rgba(240, 168, 160, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
 }
 
 #root {
@@ -114,6 +139,14 @@ h2 {
   @media (max-width: 1024px) {
     font-size: 12px;
   }
+}
+
+h3 {
+  font-family: var(--heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 24px 0 4px;
 }
 
 p {

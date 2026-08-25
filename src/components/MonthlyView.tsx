@@ -1,11 +1,15 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
 import { dayLabelIt, daysInMonth, isItalianHoliday, isWeekend, monthLabelIt, startOfMonth, toISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
-import { formatMinutes, listTimeEntries, type TimeEntry } from "../lib/timeEntries";
+import { formatMinutes, groupTimeEntriesByDate, listTimeEntries, summarizeDay, type TimeEntry } from "../lib/timeEntries";
 
 interface MonthlyViewProps {
   accessToken: string;
   spreadsheetId: string;
+}
+
+function toMonthInputValue(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
@@ -32,14 +36,17 @@ export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
     });
   }, [loadEntries]);
 
-  const entriesByDate = useMemo(() => new Map(entries.map((e) => [e.date, e])), [entries]);
+  const entriesByDate = useMemo(() => groupTimeEntriesByDate(entries), [entries]);
 
   const days = useMemo(() => {
     const total = daysInMonth(monthStart);
     return Array.from({ length: total }, (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1));
   }, [monthStart]);
 
-  const monthTotalMinutes = days.reduce((total, day) => total + (entriesByDate.get(toISODate(day))?.minutesWorked ?? 0), 0);
+  const monthTotalMinutes = days.reduce(
+    (total, day) => total + summarizeDay(entriesByDate.get(toISODate(day)) ?? []).totalMinutes,
+    0,
+  );
 
   return (
     <section className="monthly-view">
@@ -49,6 +56,16 @@ export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
         <button onClick={() => setMonthStart((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>← Mese prec.</button>
         <button onClick={() => setMonthStart(startOfMonth(new Date()))}>Oggi</button>
         <button onClick={() => setMonthStart((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>Mese succ. →</button>
+        <input
+          type="month"
+          className="month-picker"
+          value={toMonthInputValue(monthStart)}
+          onChange={(e) => {
+            if (!e.target.value) return;
+            const [y, m] = e.target.value.split("-").map(Number);
+            setMonthStart(new Date(y, m - 1, 1));
+          }}
+        />
         <button onClick={() => void loadEntries()} disabled={loading}>
           {loading ? "Aggiornamento..." : "Aggiorna"}
         </button>
@@ -70,16 +87,18 @@ export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
         <tbody>
           {days.map((day) => {
             const iso = toISODate(day);
-            const entry = entriesByDate.get(iso);
+            const daySegments = entriesByDate.get(iso) ?? [];
+            const summary = summarizeDay(daySegments);
             const nonWorking = isWeekend(day) || isItalianHoliday(day);
             return (
               <tr key={iso} className={nonWorking ? "non-working" : undefined}>
                 <td>
                   {dayLabelIt(day)} {iso}
+                  {daySegments.length > 1 && <span className="hint"> ({daySegments.length} turni)</span>}
                 </td>
-                <td>{entry?.checkIn ?? "—"}</td>
-                <td>{entry?.checkOut ?? "—"}</td>
-                <td>{entry ? formatMinutes(entry.minutesWorked) : "—"}</td>
+                <td>{summary.firstCheckIn || "—"}</td>
+                <td>{summary.lastCheckOut || "—"}</td>
+                <td>{daySegments.length > 0 ? formatMinutes(summary.totalMinutes) : "—"}</td>
               </tr>
             );
           })}

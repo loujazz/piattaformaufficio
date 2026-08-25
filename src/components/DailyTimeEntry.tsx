@@ -1,7 +1,15 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isItalianHoliday, isWeekend, nowLocalHHMM, parseISODate, todayLocalISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
-import { computeMinutesWorked, findTimeEntryForDate, formatMinutes, saveTimeEntry } from "../lib/timeEntries";
+import {
+  computeMinutesWorked,
+  deleteTimeEntry,
+  formatMinutes,
+  listTimeEntriesForDate,
+  saveTimeEntry,
+  summarizeDay,
+  type TimeEntry,
+} from "../lib/timeEntries";
 
 interface DailyTimeEntryProps {
   accessToken: string;
@@ -10,17 +18,20 @@ interface DailyTimeEntryProps {
 
 export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryProps) {
   const [date, setDate] = useState(todayLocalISODate);
+  const [segments, setSegments] = useState<TimeEntry[]>([]);
+  const [loadingSegments, setLoadingSegments] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [deletingRowNumber, setDeletingRowNumber] = useState<number | null>(null);
+
+  const [editingRowNumber, setEditingRowNumber] = useState<number | null>(null);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [activityNote, setActivityNote] = useState("");
   const [weekendOverride, setWeekendOverride] = useState(false);
   const [offSite, setOffSite] = useState(false);
   const [offSiteLocation, setOffSiteLocation] = useState("");
-  const [rowNumber, setRowNumber] = useState<number | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
@@ -35,48 +46,92 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
     return { nonWorking: weekend || holiday, weekend, holiday };
   }, [date]);
 
-  const loadEntry = useCallback(async () => {
-    setLoading(true);
+  const resetFormForNewSegment = useCallback(() => {
+    setEditingRowNumber(null);
+    setCheckIn("");
+    setCheckOut("");
+    setActivityNote("");
+    setWeekendOverride(false);
+    setOffSite(false);
+    setOffSiteLocation("");
+  }, []);
+
+  const loadSegments = useCallback(async () => {
+    setLoadingSegments(true);
     setLoadError(null);
     setSavedMessage(null);
     try {
-      const stored = await findTimeEntryForDate(accessToken, spreadsheetId, date);
-      if (stored) {
-        setCheckIn(stored.entry.checkIn);
-        setCheckOut(stored.entry.checkOut);
-        setActivityNote(stored.entry.activityNote);
-        setWeekendOverride(stored.entry.isWeekendOverride);
-        setOffSite(stored.entry.offSite);
-        setOffSiteLocation(stored.entry.offSiteLocation);
-        setRowNumber(stored.rowNumber);
-      } else {
-        setCheckIn("");
-        setCheckOut("");
-        setActivityNote("");
-        setWeekendOverride(false);
-        setOffSite(false);
-        setOffSiteLocation("");
-        setRowNumber(null);
-      }
-      if (pendingQuickAction.current === "checkIn") {
-        setCheckIn(nowLocalHHMM());
-      } else if (pendingQuickAction.current === "checkOut") {
-        setCheckOut(nowLocalHHMM());
-      }
-      pendingQuickAction.current = null;
+      setSegments(await listTimeEntriesForDate(accessToken, spreadsheetId, date));
     } catch (err) {
-      pendingQuickAction.current = null;
       setLoadError(err instanceof SheetsApiError ? err.message : "Errore nel caricamento del giorno selezionato.");
     } finally {
-      setLoading(false);
+      setLoadingSegments(false);
     }
-  }, [accessToken, spreadsheetId, date]);
+    resetFormForNewSegment();
+    if (pendingQuickAction.current === "checkIn") {
+      setCheckIn(nowLocalHHMM());
+    } else if (pendingQuickAction.current === "checkOut") {
+      setCheckOut(nowLocalHHMM());
+    }
+    pendingQuickAction.current = null;
+  }, [accessToken, spreadsheetId, date, resetFormForNewSegment]);
 
   useEffect(() => {
     startTransition(() => {
-      void loadEntry();
+      void loadSegments();
     });
-  }, [loadEntry]);
+  }, [loadSegments]);
+
+  const handleQuickCheckIn = useCallback(() => {
+    const todayIso = todayLocalISODate();
+    if (date === todayIso) {
+      resetFormForNewSegment();
+      setCheckIn(nowLocalHHMM());
+    } else {
+      pendingQuickAction.current = "checkIn";
+      setDate(todayIso);
+    }
+  }, [date, resetFormForNewSegment]);
+
+  const handleQuickCheckOut = useCallback(() => {
+    const todayIso = todayLocalISODate();
+    if (date === todayIso) {
+      setCheckOut(nowLocalHHMM());
+    } else {
+      pendingQuickAction.current = "checkOut";
+      setDate(todayIso);
+    }
+  }, [date]);
+
+  const handleEditSegment = useCallback((segment: TimeEntry) => {
+    setEditingRowNumber(segment.rowNumber);
+    setCheckIn(segment.checkIn);
+    setCheckOut(segment.checkOut);
+    setActivityNote(segment.activityNote);
+    setWeekendOverride(segment.isWeekendOverride);
+    setOffSite(segment.offSite);
+    setOffSiteLocation(segment.offSiteLocation);
+    setFormError(null);
+    setSavedMessage(null);
+  }, []);
+
+  const handleDeleteSegment = useCallback(
+    async (rowNumber: number) => {
+      if (!window.confirm("Eliminare questo turno? L'operazione non è reversibile.")) return;
+      setDeletingRowNumber(rowNumber);
+      setLoadError(null);
+      try {
+        await deleteTimeEntry(accessToken, spreadsheetId, rowNumber);
+        if (editingRowNumber === rowNumber) resetFormForNewSegment();
+        await loadSegments();
+      } catch (err) {
+        setLoadError(err instanceof SheetsApiError ? err.message : "Errore nell'eliminazione.");
+      } finally {
+        setDeletingRowNumber(null);
+      }
+    },
+    [accessToken, spreadsheetId, editingRowNumber, resetFormForNewSegment, loadSegments],
+  );
 
   const handleSave = useCallback(async () => {
     setFormError(null);
@@ -115,10 +170,10 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
           offSiteLocation: offSite ? offSiteLocation.trim() : "",
           isWeekendOverride: dayInfo.nonWorking ? weekendOverride : false,
         },
-        rowNumber,
+        editingRowNumber,
       );
-      setSavedMessage("Presenza salvata.");
-      await loadEntry();
+      setSavedMessage(editingRowNumber !== null ? "Turno aggiornato." : "Turno aggiunto.");
+      await loadSegments();
     } catch (err) {
       setFormError(err instanceof SheetsApiError ? err.message : "Errore nel salvataggio.");
     } finally {
@@ -135,32 +190,13 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
     offSite,
     offSiteLocation,
     dayInfo,
-    rowNumber,
-    loadEntry,
+    editingRowNumber,
+    loadSegments,
   ]);
 
   const livePreviewMinutes = checkIn && checkOut && checkOut > checkIn ? computeMinutesWorked(checkIn, checkOut) : null;
   const isToday = date === todayLocalISODate();
-
-  const handleQuickCheckIn = useCallback(() => {
-    const todayIso = todayLocalISODate();
-    if (date === todayIso) {
-      setCheckIn(nowLocalHHMM());
-    } else {
-      pendingQuickAction.current = "checkIn";
-      setDate(todayIso);
-    }
-  }, [date]);
-
-  const handleQuickCheckOut = useCallback(() => {
-    const todayIso = todayLocalISODate();
-    if (date === todayIso) {
-      setCheckOut(nowLocalHHMM());
-    } else {
-      pendingQuickAction.current = "checkOut";
-      setDate(todayIso);
-    }
-  }, [date]);
+  const daySummary = summarizeDay(segments);
 
   return (
     <section className="daily-entry">
@@ -181,18 +217,47 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
 
-      {loading && <p>Caricamento...</p>}
+      {loadingSegments && <p>Caricamento...</p>}
       {loadError && <p className="error">{loadError}</p>}
 
-      {!loading && (
+      {!loadingSegments && (
         <>
-          {rowNumber !== null && <p className="hint">Presenza già registrata per questo giorno: la modifica la sovrascrive.</p>}
-
           {dayInfo.nonWorking && (
-            <p className="warning">
-              ⚠️ {dayInfo.holiday ? "Festività" : "Weekend"}: giorno normalmente non lavorativo.
-            </p>
+            <p className="warning">⚠️ {dayInfo.holiday ? "Festività" : "Weekend"}: giorno normalmente non lavorativo.</p>
           )}
+
+          {segments.length > 0 && (
+            <div className="segments-list">
+              <p className="hint">
+                Turni registrati — totale giornata: <strong>{formatMinutes(daySummary.totalMinutes)}</strong>
+              </p>
+              <ul>
+                {segments.map((segment) => (
+                  <li key={segment.rowNumber} className={editingRowNumber === segment.rowNumber ? "editing" : undefined}>
+                    <span className="segment-time">
+                      {segment.checkIn}–{segment.checkOut} ({formatMinutes(segment.minutesWorked)})
+                    </span>
+                    {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
+                    {segment.activityNote && <span className="segment-note">{segment.activityNote}</span>}
+                    <span className="segment-actions">
+                      <button type="button" onClick={() => handleEditSegment(segment)}>
+                        Modifica
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteSegment(segment.rowNumber)}
+                        disabled={deletingRowNumber === segment.rowNumber}
+                      >
+                        {deletingRowNumber === segment.rowNumber ? "Eliminazione..." : "Elimina"}
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <h3>{editingRowNumber !== null ? "Modifica turno" : "Aggiungi turno"}</h3>
 
           <label className="field">
             Entrata
@@ -217,7 +282,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
           {dayInfo.nonWorking && (
             <label className="checkbox-field">
               <input type="checkbox" checked={weekendOverride} onChange={(e) => setWeekendOverride(e.target.checked)} />
-              Registra comunque le ore per questo giorno (evento/missione)
+              Registra comunque le ore per questo turno (evento/missione)
             </label>
           )}
 
@@ -238,14 +303,19 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
             </label>
           )}
 
-          {livePreviewMinutes !== null && <p className="hint">Ore lavorate: {formatMinutes(livePreviewMinutes)}</p>}
+          {livePreviewMinutes !== null && <p className="hint">Ore del turno: {formatMinutes(livePreviewMinutes)}</p>}
 
           {formError && <p className="error">{formError}</p>}
           {savedMessage && <p className="success">{savedMessage}</p>}
 
-          <button onClick={handleSave} disabled={saving}>
-            {saving ? "Salvataggio..." : rowNumber !== null ? "Aggiorna presenza" : "Salva presenza"}
+          <button className="primary-button" onClick={handleSave} disabled={saving}>
+            {saving ? "Salvataggio..." : editingRowNumber !== null ? "Salva modifiche" : "Aggiungi turno"}
           </button>
+          {editingRowNumber !== null && (
+            <button type="button" onClick={resetFormForNewSegment} disabled={saving}>
+              Annulla modifica
+            </button>
+          )}
         </>
       )}
     </section>

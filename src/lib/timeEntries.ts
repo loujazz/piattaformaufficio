@@ -1,4 +1,4 @@
-import { appendValues, getValues, updateValues } from "./googleSheetsApi";
+import { appendValues, deleteRow, getSheetIdByTitle, getValues, updateValues } from "./googleSheetsApi";
 
 export interface TimeEntry {
   date: string; // YYYY-MM-DD
@@ -9,6 +9,7 @@ export interface TimeEntry {
   offSite: boolean;
   offSiteLocation: string;
   isWeekendOverride: boolean;
+  rowNumber: number; // numero di riga nel foglio (1-based, header = riga 1)
 }
 
 const SHEET = "TimeEntries";
@@ -33,7 +34,7 @@ function isTrue(value: string | undefined): boolean {
   return (value ?? "").trim().toUpperCase() === "TRUE";
 }
 
-function parseRow(row: string[]): TimeEntry {
+function parseRow(row: string[], rowNumber: number): TimeEntry {
   return {
     date: row[0] ?? "",
     checkIn: row[1] ?? "",
@@ -43,40 +44,62 @@ function parseRow(row: string[]): TimeEntry {
     offSite: isTrue(row[5]),
     offSiteLocation: row[6] ?? "",
     isWeekendOverride: isTrue(row[7]),
+    rowNumber,
   };
 }
 
-export interface StoredTimeEntry {
-  entry: TimeEntry;
-  rowNumber: number; // numero di riga nel foglio (1-based, header = riga 1)
-}
-
-/** Legge tutti i TimeEntries salvati, per le viste aggregate settimanale/mensile. */
+/** Legge tutti i TimeEntries salvati. Più righe possono condividere la stessa data (giornate con più turni). */
 export async function listTimeEntries(accessToken: string, spreadsheetId: string): Promise<TimeEntry[]> {
   const rows = await getValues(accessToken, spreadsheetId, DATA_RANGE);
-  return rows.filter((row) => row[0]).map(parseRow);
+  return rows.map((row, i) => parseRow(row, i + 2)).filter((entry) => entry.date);
 }
 
-/** Cerca l'eventuale TimeEntry già salvato per una data (YYYY-MM-DD). */
-export async function findTimeEntryForDate(
-  accessToken: string,
-  spreadsheetId: string,
-  date: string,
-): Promise<StoredTimeEntry | null> {
-  const rows = await getValues(accessToken, spreadsheetId, DATA_RANGE);
-  const index = rows.findIndex((row) => row[0] === date);
-  if (index === -1) return null;
-  return { entry: parseRow(rows[index]), rowNumber: index + 2 };
+/** Turni già salvati per una data (YYYY-MM-DD), ordinati per orario di entrata. */
+export async function listTimeEntriesForDate(accessToken: string, spreadsheetId: string, date: string): Promise<TimeEntry[]> {
+  const entries = await listTimeEntries(accessToken, spreadsheetId);
+  return entries.filter((e) => e.date === date).sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+}
+
+export interface DaySummary {
+  totalMinutes: number;
+  firstCheckIn: string;
+  lastCheckOut: string;
+  segments: TimeEntry[];
+}
+
+/** Raggruppa una lista di TimeEntries per data. */
+export function groupTimeEntriesByDate(entries: TimeEntry[]): Map<string, TimeEntry[]> {
+  const map = new Map<string, TimeEntry[]>();
+  for (const entry of entries) {
+    const list = map.get(entry.date);
+    if (list) {
+      list.push(entry);
+    } else {
+      map.set(entry.date, [entry]);
+    }
+  }
+  return map;
+}
+
+/** Riepilogo di una giornata (eventualmente su più turni): ore totali, primo ingresso, ultima uscita. */
+export function summarizeDay(dayEntries: TimeEntry[]): DaySummary {
+  const sorted = [...dayEntries].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+  return {
+    totalMinutes: sorted.reduce((sum, e) => sum + e.minutesWorked, 0),
+    firstCheckIn: sorted[0]?.checkIn ?? "",
+    lastCheckOut: sorted[sorted.length - 1]?.checkOut ?? "",
+    segments: sorted,
+  };
 }
 
 /**
- * Salva un TimeEntry: aggiorna la riga esistente se rowNumber è passato,
- * altrimenti aggiunge una nuova riga in fondo al tab.
+ * Salva un turno: aggiorna la riga esistente se rowNumber è passato,
+ * altrimenti aggiunge una nuova riga in fondo al tab (un nuovo turno per quel giorno).
  */
 export async function saveTimeEntry(
   accessToken: string,
   spreadsheetId: string,
-  entry: TimeEntry,
+  entry: Omit<TimeEntry, "rowNumber">,
   rowNumber: number | null,
 ): Promise<void> {
   const values = [
@@ -96,4 +119,10 @@ export async function saveTimeEntry(
   } else {
     await appendValues(accessToken, spreadsheetId, `${SHEET}!A:H`, values);
   }
+}
+
+/** Elimina un turno (riga) esistente. */
+export async function deleteTimeEntry(accessToken: string, spreadsheetId: string, rowNumber: number): Promise<void> {
+  const sheetId = await getSheetIdByTitle(accessToken, spreadsheetId, SHEET);
+  await deleteRow(accessToken, spreadsheetId, sheetId, rowNumber);
 }

@@ -124,7 +124,7 @@ export function ExpenseForm({ accessToken, spreadsheetId, onSaved }: ExpenseForm
       {error && <p className="error">{error}</p>}
       {savedMessage && <p className="success">{savedMessage}</p>}
 
-      <button onClick={handleSave} disabled={saving}>
+      <button className="primary-button" onClick={handleSave} disabled={saving}>
         {saving ? "Salvataggio..." : "Salva spesa"}
       </button>
     </section>

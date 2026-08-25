@@ -2,7 +2,7 @@ import { ABSENCE_TYPE_LABELS, listAbsenceEntries, type AbsenceType } from "./abs
 import { dayLabelIt, daysInMonth, monthLabelIt, toISODate } from "./date";
 import { listExpenseEntries, REIMBURSEMENT_STATUS_LABELS } from "./expenses";
 import { clearValues, type CellValue, updateValues } from "./googleSheetsApi";
-import { formatMinutes, listTimeEntries } from "./timeEntries";
+import { formatMinutes, groupTimeEntriesByDate, listTimeEntries, summarizeDay } from "./timeEntries";
 
 const SHEET = "ReportTemplate";
 const CLEAR_RANGE = `${SHEET}!A1:Z500`;
@@ -28,7 +28,7 @@ export async function generateMonthlyReport(
     options.includeExpenses ? listExpenseEntries(accessToken, spreadsheetId) : Promise.resolve([]),
   ]);
 
-  const timeByDate = new Map(timeEntries.map((e) => [e.date, e]));
+  const timeByDate = groupTimeEntriesByDate(timeEntries);
   const monthAbsences = absenceEntries.filter((e) => e.date.startsWith(monthPrefix));
   const monthExpenses = expenseEntries.filter((e) => e.date.startsWith(monthPrefix));
 
@@ -47,16 +47,23 @@ export async function generateMonthlyReport(
   for (let day = 1; day <= daysInMonth(monthDate); day++) {
     const date = new Date(year, month - 1, day);
     const iso = toISODate(date);
-    const entry = timeByDate.get(iso);
-    if (entry) totalMinutes += entry.minutesWorked;
+    const daySegments = timeByDate.get(iso) ?? [];
+    const summary = summarizeDay(daySegments);
+    totalMinutes += summary.totalMinutes;
+    const activityNotes = daySegments.map((s) => s.activityNote).filter(Boolean).join("; ");
+    const offSiteLocations = daySegments
+      .filter((s) => s.offSite)
+      .map((s) => s.offSiteLocation)
+      .filter(Boolean)
+      .join("; ");
     rows.push([
       iso,
       dayLabelIt(date),
-      entry?.checkIn ?? "",
-      entry?.checkOut ?? "",
-      entry ? formatMinutes(entry.minutesWorked) : "",
-      entry?.activityNote ?? "",
-      entry?.offSite ? entry.offSiteLocation : "",
+      summary.firstCheckIn,
+      summary.lastCheckOut,
+      daySegments.length > 0 ? formatMinutes(summary.totalMinutes) : "",
+      activityNotes,
+      offSiteLocations,
       absencesByDate.get(iso) ?? "",
     ]);
   }

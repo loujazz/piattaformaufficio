@@ -79,7 +79,7 @@ export function ExportView({ accessToken, spreadsheetId }: ExportViewProps) {
 
       {error && <p className="error">{error}</p>}
 
-      <button onClick={handleGenerate} disabled={generating}>
+      <button className="primary-button" onClick={handleGenerate} disabled={generating}>
         {generating ? "Generazione in corso..." : "Genera report"}
       </button>
 

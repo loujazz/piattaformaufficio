@@ -99,3 +99,39 @@ export async function clearValues(accessToken: string, spreadsheetId: string, ra
   const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`;
   await sheetsFetch(url, accessToken, { method: "POST" });
 }
+
+/** Recupera il gid (sheetId numerico) di un tab dal suo nome, necessario per cancellare righe o costruire l'export PDF. */
+export async function getSheetIdByTitle(accessToken: string, spreadsheetId: string, tabTitle: string): Promise<number> {
+  const meta = await getSpreadsheetMeta(accessToken, spreadsheetId);
+  const sheet = meta.sheets.find((s) => s.title === tabTitle);
+  if (!sheet) throw new Error(`Tab "${tabTitle}" non trovato nel foglio.`);
+  return sheet.sheetId;
+}
+
+/** Elimina una singola riga da un tab (le righe sottostanti si spostano su di una posizione). */
+export async function deleteRow(
+  accessToken: string,
+  spreadsheetId: string,
+  sheetId: number,
+  rowNumber: number, // 1-based, come mostrato in Google Sheets
+): Promise<void> {
+  const url = `${SHEETS_API_BASE}/${spreadsheetId}:batchUpdate`;
+  await sheetsFetch(url, accessToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+          },
+        },
+      ],
+    }),
+  });
+}

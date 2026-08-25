@@ -2,6 +2,17 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Applica subito il tema salvato, prima del primo paint, per evitare il flash del tema sbagliato.
+      (function () {
+        try {
+          var theme = localStorage.getItem('presenze-marconi-theme');
+          if (theme === 'light' || theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
