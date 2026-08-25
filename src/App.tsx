@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { DailyTimeEntry } from "./components/DailyTimeEntry";
 import { useGoogleAuth } from "./hooks/useGoogleAuth";
 import { getSpreadsheetMeta, getValues, SheetsApiError } from "./lib/googleSheetsApi";
 import "./App.css";
@@ -69,32 +70,39 @@ function App() {
         </section>
       )}
 
-      {status === "signed-in" && (
-        <section>
-          <p className="success">Login effettuato.</p>
-          <button onClick={logout}>Esci</button>
-          <button onClick={verifyConnection} disabled={checking}>
-            {checking ? "Verifica in corso..." : "Verifica connessione al foglio"}
+      {status === "signed-in" && accessToken && (
+        <>
+          <button className="logout" onClick={logout}>
+            Esci
           </button>
 
-          {checkError && <p className="error">{checkError}</p>}
+          <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />
 
-          {check && (
-            <div className="check-result">
-              <p>
-                Foglio collegato: <strong>{check.spreadsheetTitle}</strong>
-              </p>
-              <ul>
-                {EXPECTED_TABS.map((tab) => (
-                  <li key={tab} className={check.foundTabs.includes(tab) ? "ok" : "missing"}>
-                    {check.foundTabs.includes(tab) ? "✅" : "⚠️ mancante —"} {tab}
-                  </li>
-                ))}
-              </ul>
-              <p>Intestazioni trovate su TimeEntries: {check.timeEntriesHeaders.join(", ") || "(nessuna)"}</p>
-            </div>
-          )}
-        </section>
+          <details className="diagnostics">
+            <summary>Diagnostica collegamento foglio</summary>
+            <button onClick={verifyConnection} disabled={checking}>
+              {checking ? "Verifica in corso..." : "Verifica connessione al foglio"}
+            </button>
+
+            {checkError && <p className="error">{checkError}</p>}
+
+            {check && (
+              <div className="check-result">
+                <p>
+                  Foglio collegato: <strong>{check.spreadsheetTitle}</strong>
+                </p>
+                <ul>
+                  {EXPECTED_TABS.map((tab) => (
+                    <li key={tab} className={check.foundTabs.includes(tab) ? "ok" : "missing"}>
+                      {check.foundTabs.includes(tab) ? "✅" : "⚠️ mancante —"} {tab}
+                    </li>
+                  ))}
+                </ul>
+                <p>Intestazioni trovate su TimeEntries: {check.timeEntriesHeaders.join(", ") || "(nessuna)"}</p>
+              </div>
+            )}
+          </details>
+        </>
       )}
     </main>
   );

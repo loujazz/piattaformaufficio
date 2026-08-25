@@ -20,6 +20,48 @@ button {
   color: #087f23;
 }
 
+.hint {
+  color: #555;
+  font-size: 0.9em;
+}
+
+.logout {
+  float: right;
+}
+
+.daily-entry {
+  clear: both;
+  margin-top: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.diagnostics {
+  margin-top: 2rem;
+  border-top: 1px solid #e5e4e7;
+  padding-top: 1rem;
+  text-align: left;
+}
+
+.diagnostics summary {
+  cursor: pointer;
+  color: #555;
+}
+
 .check-result {
   margin-top: 1rem;
 }

@@ -54,3 +54,35 @@ export async function getValues(accessToken: string, spreadsheetId: string, rang
   const data = (await res.json()) as { values?: string[][] };
   return data.values ?? [];
 }
+
+export type CellValue = string | number | boolean;
+
+/** Aggiunge una nuova riga in fondo al tab (es. range "TimeEntries!A:H"). */
+export async function appendValues(
+  accessToken: string,
+  spreadsheetId: string,
+  range: string,
+  values: CellValue[][],
+): Promise<void> {
+  const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  await sheetsFetch(url, accessToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ values }),
+  });
+}
+
+/** Sovrascrive un range esistente (es. una riga già presente da aggiornare). */
+export async function updateValues(
+  accessToken: string,
+  spreadsheetId: string,
+  range: string,
+  values: CellValue[][],
+): Promise<void> {
+  const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  await sheetsFetch(url, accessToken, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ values }),
+  });
+}
