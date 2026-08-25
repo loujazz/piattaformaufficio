@@ -142,15 +142,22 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     setFormError(null);
     setSavedMessage(null);
 
-    if (!checkIn || !checkOut) {
-      setFormError("Inserisci sia l'orario di entrata che quello di uscita.");
+    const bothTimesEmpty = !checkIn && !checkOut;
+    const bothTimesFilled = Boolean(checkIn) && Boolean(checkOut);
+
+    if (!bothTimesEmpty && !bothTimesFilled) {
+      setFormError("Inserisci sia l'orario di entrata che quello di uscita, oppure lasciali entrambi vuoti per registrare solo l'incarico.");
       return;
     }
-    if (checkOut <= checkIn) {
+    if (bothTimesFilled && checkOut <= checkIn) {
       setFormError("L'orario di uscita deve essere successivo a quello di entrata.");
       return;
     }
-    if (dayInfo.nonWorking && !weekendOverride) {
+    if (bothTimesEmpty && !assignmentLink.trim()) {
+      setFormError("Inserisci gli orari del turno, oppure almeno il link dell'incarico.");
+      return;
+    }
+    if (bothTimesFilled && dayInfo.nonWorking && !weekendOverride) {
       setFormError("Questo giorno non è lavorativo (weekend o festività). Spunta la conferma per registrare comunque le ore.");
       return;
     }
@@ -161,7 +168,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
 
     setSaving(true);
     try {
-      const minutesWorked = computeMinutesWorked(checkIn, checkOut);
+      const minutesWorked = bothTimesFilled ? computeMinutesWorked(checkIn, checkOut) : 0;
       await saveTimeEntry(
         accessToken,
         spreadsheetId,
@@ -242,7 +249,9 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
                 {segments.map((segment) => (
                   <li key={segment.rowNumber} className={editingRowNumber === segment.rowNumber ? "editing" : undefined}>
                     <span className="segment-time">
-                      {segment.checkIn}–{segment.checkOut} ({formatMinutes(segment.minutesWorked)})
+                      {segment.checkIn && segment.checkOut
+                        ? `${segment.checkIn}–${segment.checkOut} (${formatMinutes(segment.minutesWorked)})`
+                        : "Solo incarico (senza orari)"}
                     </span>
                     {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
                     {segment.assignmentLink && (
@@ -324,6 +333,11 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
               placeholder="https://drive.google.com/..."
             />
           </label>
+          {!checkIn && !checkOut && (
+            <p className="hint">
+              Puoi salvare solo l'incarico, senza orari, se vuoi registrarlo prima di timbrare il turno.
+            </p>
+          )}
 
           {livePreviewMinutes !== null && <p className="hint">Ore del turno: {formatMinutes(livePreviewMinutes)}</p>}
 
@@ -331,7 +345,13 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
           {savedMessage && <p className="success">{savedMessage}</p>}
 
           <button className="primary-button" onClick={handleSave} disabled={saving}>
-            {saving ? "Salvataggio..." : editingRowNumber !== null ? "Salva modifiche" : "Aggiungi turno"}
+            {saving
+              ? "Salvataggio..."
+              : editingRowNumber !== null
+                ? "Salva modifiche"
+                : !checkIn && !checkOut
+                  ? "Salva incarico"
+                  : "Aggiungi turno"}
           </button>
           {editingRowNumber !== null && (
             <button type="button" onClick={resetFormForNewSegment} disabled={saving}>

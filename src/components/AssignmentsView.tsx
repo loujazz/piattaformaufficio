@@ -57,9 +57,7 @@ export function AssignmentsView({ accessToken, spreadsheetId }: AssignmentsViewP
               <td>
                 {dayLabelIt(parseISODate(a.date))} {a.date}
               </td>
-              <td>
-                {a.checkIn}–{a.checkOut}
-              </td>
+              <td>{a.checkIn && a.checkOut ? `${a.checkIn}–${a.checkOut}` : "—"}</td>
               <td>{a.activityNote || "—"}</td>
             </tr>
           ))}

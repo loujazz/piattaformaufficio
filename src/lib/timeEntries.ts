@@ -89,14 +89,17 @@ export function groupTimeEntriesByDate(entries: TimeEntry[]): Map<string, TimeEn
   return map;
 }
 
-/** Riepilogo di una giornata (eventualmente su più turni): ore totali, primo ingresso, ultima uscita. */
+/**
+ * Riepilogo di una giornata (eventualmente su più turni): ore totali, primo ingresso, ultima uscita.
+ * Le righe senza orari (solo incarico, senza ore registrate) non contano ai fini di ore/entrata/uscita.
+ */
 export function summarizeDay(dayEntries: TimeEntry[]): DaySummary {
-  const sorted = [...dayEntries].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+  const timed = dayEntries.filter((e) => e.checkIn && e.checkOut).sort((a, b) => a.checkIn.localeCompare(b.checkIn));
   return {
-    totalMinutes: sorted.reduce((sum, e) => sum + e.minutesWorked, 0),
-    firstCheckIn: sorted[0]?.checkIn ?? "",
-    lastCheckOut: sorted[sorted.length - 1]?.checkOut ?? "",
-    segments: sorted,
+    totalMinutes: timed.reduce((sum, e) => sum + e.minutesWorked, 0),
+    firstCheckIn: timed[0]?.checkIn ?? "",
+    lastCheckOut: timed[timed.length - 1]?.checkOut ?? "",
+    segments: timed,
   };
 }
 

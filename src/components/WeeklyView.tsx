@@ -86,12 +86,13 @@ export function WeeklyView({ accessToken, spreadsheetId, onSelectDay }: WeeklyVi
               >
                 <td>
                   {dayLabelIt(day)} {iso}
-                  {nonWorking && daySegments.length === 0 && <span className="hint"> (non lavorativo)</span>}
-                  {daySegments.length > 1 && <span className="hint"> ({daySegments.length} turni)</span>}
+                  {nonWorking && summary.segments.length === 0 && <span className="hint"> (non lavorativo)</span>}
+                  {summary.segments.length > 1 && <span className="hint"> ({summary.segments.length} turni)</span>}
+                  {daySegments.some((e) => !e.checkIn && e.assignmentLink) && <span className="hint"> 📄</span>}
                 </td>
                 <td>{summary.firstCheckIn || "—"}</td>
                 <td>{summary.lastCheckOut || "—"}</td>
-                <td>{daySegments.length > 0 ? formatMinutes(summary.totalMinutes) : "—"}</td>
+                <td>{summary.segments.length > 0 ? formatMinutes(summary.totalMinutes) : "—"}</td>
               </tr>
             );
           })}
