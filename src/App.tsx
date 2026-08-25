@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { AbsencesView } from "./components/AbsencesView";
 import { DailyTimeEntry } from "./components/DailyTimeEntry";
 import { MonthlyView } from "./components/MonthlyView";
 import { WeeklyView } from "./components/WeeklyView";
@@ -11,7 +12,7 @@ const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID;
 
 const EXPECTED_TABS = ["TimeEntries", "AbsenceEntries", "ExpenseEntries", "LeaveConfig", "ReportTemplate"];
 
-type ViewName = "daily" | "weekly" | "monthly";
+type ViewName = "daily" | "weekly" | "monthly" | "absences";
 
 interface ConnectionCheck {
   spreadsheetTitle: string;
@@ -91,11 +92,15 @@ function App() {
             <button className={view === "monthly" ? "active" : undefined} onClick={() => setView("monthly")}>
               Mensile
             </button>
+            <button className={view === "absences" ? "active" : undefined} onClick={() => setView("absences")}>
+              Assenze
+            </button>
           </nav>
 
           {view === "daily" && <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "weekly" && <WeeklyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "monthly" && <MonthlyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "absences" && <AbsencesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
 
           <details className="diagnostics">
             <summary>Diagnostica collegamento foglio</summary>

@@ -94,11 +94,27 @@ button {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   font: inherit;
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.absence-form {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.leave-balances {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.entries-table tr.negative td {
+  color: #b00020;
+  font-weight: 600;
 }
 
 .diagnostics {
