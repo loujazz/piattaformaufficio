@@ -13,19 +13,59 @@ export interface UseGoogleAuthResult {
   logout: () => void;
 }
 
+const STORAGE_KEY = "presenze-marconi-token";
+
+/**
+ * Il tentativo "silenzioso" di Google Identity Services (prompt: 'none') si basa su un
+ * iframe verso accounts.google.com: se il browser blocca i cookie di terze parti (default
+ * ormai comune in Safari, e sempre più spesso in Chrome/Firefox), fallisce sistematicamente
+ * a ogni refresh di pagina. Per questo il token viene anche salvato in sessionStorage e
+ * riusato finché resta valido (circa un'ora), senza richiederne uno nuovo: il refresh della
+ * pagina non causa più un logout. sessionStorage si svuota da solo alla chiusura della scheda.
+ */
+function readStoredToken(): AccessToken | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<AccessToken>;
+    if (typeof parsed.value !== "string" || typeof parsed.expiresAt !== "number") return null;
+    if (parsed.expiresAt <= Date.now()) return null;
+    return { value: parsed.value, expiresAt: parsed.expiresAt };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredToken(token: AccessToken | null): void {
+  try {
+    if (token) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(token));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+  } catch {
+    // sessionStorage non disponibile (es. modalità privata): il login resta solo in memoria
+  }
+}
+
 /**
  * Gestisce login OAuth e refresh silenzioso del token.
- * Il token vive solo in memoria (mai in localStorage): allo scadere,
- * se il refresh silenzioso fallisce, si torna a "signed-out" chiedendo
- * un nuovo login esplicito, senza toccare eventuali dati non salvati
- * nel resto dell'app.
+ * Il token è salvato in sessionStorage (svuotato alla chiusura della scheda) per
+ * sopravvivere ai refresh di pagina; allo scadere, se il refresh silenzioso fallisce,
+ * si torna a "signed-out" chiedendo un nuovo login esplicito, senza toccare eventuali
+ * dati non salvati nel resto dell'app.
  */
 export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
   const [status, setStatus] = useState<AuthStatus>("checking");
-  const [token, setToken] = useState<AccessToken | null>(null);
+  const [token, setTokenState] = useState<AccessToken | null>(null);
   const [userInfo, setUserInfo] = useState<GoogleUserInfo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setToken = useCallback((next: AccessToken | null) => {
+    setTokenState(next);
+    writeStoredToken(next);
+  }, []);
 
   const clearRefreshTimer = useCallback(() => {
     if (refreshTimer.current) {
@@ -35,8 +75,8 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
   }, []);
 
   // Ref sempre aggiornato (fuori dal render, via effect qui sotto) per
-  // permettere alla callback di refresh di richiamare se stessa senza
-  // creare una dipendenza ciclica nello useCallback.
+  // permettere alla callback di refresh (e al ripristino da sessionStorage)
+  // di richiamare handleToken senza creare una dipendenza ciclica.
   const handleTokenRef = useRef<(newToken: AccessToken) => void>(() => {});
 
   const handleToken = useCallback(
@@ -61,18 +101,23 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
         );
       }, msUntilRefresh);
     },
-    [clientId, clearRefreshTimer],
+    [clientId, clearRefreshTimer, setToken],
   );
 
   useEffect(() => {
     handleTokenRef.current = handleToken;
   }, [handleToken]);
 
-  // Al primo caricamento tenta un login silenzioso: se il browser ha ancora la
-  // sessione Google attiva e il consenso già dato in precedenza, l'utente
-  // risulta subito collegato senza dover ricliccare "Accedi con Google" ogni
-  // volta che ricarica la pagina. Se fallisce, si torna al login esplicito.
+  // Al montaggio: se sessionStorage ha ancora un token valido (sopravvissuto a un refresh
+  // di pagina) lo riusa subito, schedulando comunque il refresh automatico come al solito.
+  // Altrimenti tenta un login silenzioso via Google Identity Services; se anche questo
+  // fallisce (es. cookie di terze parti bloccati), si torna al login esplicito.
   useEffect(() => {
+    const stored = readStoredToken();
+    if (stored) {
+      handleTokenRef.current(stored);
+      return;
+    }
     return onGoogleIdentityReady(() => {
       requestAccessToken(
         clientId,
@@ -118,7 +163,7 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
     clearRefreshTimer();
     setToken(null);
     setStatus("signed-out");
-  }, [clearRefreshTimer]);
+  }, [clearRefreshTimer, setToken]);
 
   useEffect(() => clearRefreshTimer, [clearRefreshTimer]);
 
