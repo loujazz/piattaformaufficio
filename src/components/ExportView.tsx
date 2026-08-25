@@ -26,7 +26,6 @@ export function ExportView({ accessToken, spreadsheetId }: ExportViewProps) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [includeAbsences, setIncludeAbsences] = useState(false);
   const [includeExpenses, setIncludeExpenses] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +36,7 @@ export function ExportView({ accessToken, spreadsheetId }: ExportViewProps) {
     setError(null);
     setPdfUrl(null);
     try {
-      await generateMonthlyReport(accessToken, spreadsheetId, year, month, { includeAbsences, includeExpenses });
+      await generateMonthlyReport(accessToken, spreadsheetId, year, month, { includeExpenses });
       const meta = await getSpreadsheetMeta(accessToken, spreadsheetId);
       const reportSheet = meta.sheets.find((s) => s.title === "ReportTemplate");
       if (!reportSheet) {
@@ -50,7 +49,7 @@ export function ExportView({ accessToken, spreadsheetId }: ExportViewProps) {
     } finally {
       setGenerating(false);
     }
-  }, [accessToken, spreadsheetId, year, month, includeAbsences, includeExpenses]);
+  }, [accessToken, spreadsheetId, year, month, includeExpenses]);
 
   return (
     <section className="export-view">
@@ -71,11 +70,6 @@ export function ExportView({ accessToken, spreadsheetId }: ExportViewProps) {
       <label className="field">
         Anno
         <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
-      </label>
-
-      <label className="checkbox-field">
-        <input type="checkbox" checked={includeAbsences} onChange={(e) => setIncludeAbsences(e.target.checked)} />
-        Includi assenze del mese
       </label>
 
       <label className="checkbox-field">

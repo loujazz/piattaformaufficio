@@ -8,11 +8,10 @@ const SHEET = "ReportTemplate";
 const CLEAR_RANGE = `${SHEET}!A1:Z500`;
 
 export interface ReportOptions {
-  includeAbsences: boolean;
   includeExpenses: boolean;
 }
 
-/** Rigenera il tab ReportTemplate con le ore/giorno del mese/anno scelto, includendo assenze e spese solo se richiesto. */
+/** Rigenera il tab ReportTemplate con le ore/giorno del mese/anno scelto. Le assenze sono sempre incluse nella riga del giorno; le spese solo se richiesto. */
 export async function generateMonthlyReport(
   accessToken: string,
   spreadsheetId: string,
@@ -25,7 +24,7 @@ export async function generateMonthlyReport(
 
   const [timeEntries, absenceEntries, expenseEntries] = await Promise.all([
     listTimeEntries(accessToken, spreadsheetId),
-    options.includeAbsences ? listAbsenceEntries(accessToken, spreadsheetId) : Promise.resolve([]),
+    listAbsenceEntries(accessToken, spreadsheetId),
     options.includeExpenses ? listExpenseEntries(accessToken, spreadsheetId) : Promise.resolve([]),
   ]);
 
@@ -35,17 +34,14 @@ export async function generateMonthlyReport(
 
   const absencesByDate = new Map<string, string>();
   for (const a of monthAbsences) {
-    const label = `${ABSENCE_TYPE_LABELS[a.type as AbsenceType] ?? a.type} (${a.amount})`;
+    const label = ABSENCE_TYPE_LABELS[a.type as AbsenceType] ?? a.type;
     absencesByDate.set(a.date, absencesByDate.has(a.date) ? `${absencesByDate.get(a.date)}; ${label}` : label);
   }
 
   const rows: CellValue[][] = [];
   rows.push([`Report presenze — ${monthLabelIt(monthDate)}`]);
   rows.push([]);
-
-  const headerRow = ["Data", "Giorno", "Entrata", "Uscita", "Ore", "Attività", "Fuori sede"];
-  if (options.includeAbsences) headerRow.push("Assenza");
-  rows.push(headerRow);
+  rows.push(["Data", "Giorno", "Entrata", "Uscita", "Ore", "Attività", "Fuori sede", "Assenza"]);
 
   let totalMinutes = 0;
   for (let day = 1; day <= daysInMonth(monthDate); day++) {
@@ -53,7 +49,7 @@ export async function generateMonthlyReport(
     const iso = toISODate(date);
     const entry = timeByDate.get(iso);
     if (entry) totalMinutes += entry.minutesWorked;
-    const row: CellValue[] = [
+    rows.push([
       iso,
       dayLabelIt(date),
       entry?.checkIn ?? "",
@@ -61,9 +57,8 @@ export async function generateMonthlyReport(
       entry ? formatMinutes(entry.minutesWorked) : "",
       entry?.activityNote ?? "",
       entry?.offSite ? entry.offSiteLocation : "",
-    ];
-    if (options.includeAbsences) row.push(absencesByDate.get(iso) ?? "");
-    rows.push(row);
+      absencesByDate.get(iso) ?? "",
+    ]);
   }
 
   rows.push([]);
