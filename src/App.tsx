@@ -30,7 +30,7 @@ interface ConnectionCheck {
 
 function App() {
   const missingConfig = !CLIENT_ID || !SPREADSHEET_ID;
-  const { status, accessToken, errorMessage, login, logout } = useGoogleAuth(CLIENT_ID);
+  const { status, accessToken, userInfo, errorMessage, login, logout } = useGoogleAuth(CLIENT_ID);
   const { theme, cycleTheme } = useTheme();
   const [view, setView] = useState<ViewName>("daily");
   const [dailyDate, setDailyDate] = useState(todayLocalISODate);
@@ -91,6 +91,12 @@ function App() {
       <header className="app-header">
         <h1>Presenze Marconi</h1>
         <div className="header-actions">
+          {status === "signed-in" && userInfo && (
+            <span className="user-badge" title={userInfo.email}>
+              {userInfo.picture && <img className="user-avatar" src={userInfo.picture} alt="" referrerPolicy="no-referrer" />}
+              <span className="user-name">{userInfo.name}</span>
+            </span>
+          )}
           {themeToggle}
           {status === "signed-in" && (
             <button className="logout" onClick={logout}>

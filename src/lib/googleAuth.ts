@@ -1,7 +1,8 @@
 // Wrapper minimale attorno a Google Identity Services (GIS) per il flusso
 // "token client" lato browser: nessun backend, il token resta solo in memoria.
 
-const SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const SCOPE =
+  "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email";
 
 export interface AccessToken {
   value: string;

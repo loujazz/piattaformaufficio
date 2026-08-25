@@ -248,11 +248,11 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
               <ul>
                 {segments.map((segment) => (
                   <li key={segment.rowNumber} className={editingRowNumber === segment.rowNumber ? "editing" : undefined}>
-                    <span className="segment-time">
-                      {segment.checkIn && segment.checkOut
-                        ? `${segment.checkIn}–${segment.checkOut} (${formatMinutes(segment.minutesWorked)})`
-                        : "Solo incarico (senza orari)"}
-                    </span>
+                    {segment.checkIn && segment.checkOut && (
+                      <span className="segment-time">
+                        {segment.checkIn}–{segment.checkOut} ({formatMinutes(segment.minutesWorked)})
+                      </span>
+                    )}
                     {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
                     {segment.assignmentLink && (
                       <a className="segment-tag" href={segment.assignmentLink} target="_blank" rel="noreferrer">

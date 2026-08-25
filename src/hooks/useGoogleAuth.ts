@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { type AccessToken, requestAccessToken } from "../lib/googleAuth";
+import { fetchGoogleUserInfo, type GoogleUserInfo } from "../lib/googleUserInfo";
 
 export type AuthStatus = "signed-out" | "signing-in" | "signed-in" | "error";
 
 export interface UseGoogleAuthResult {
   status: AuthStatus;
   accessToken: string | null;
+  userInfo: GoogleUserInfo | null;
   errorMessage: string | null;
   login: () => void;
   logout: () => void;
@@ -21,6 +23,7 @@ export interface UseGoogleAuthResult {
 export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
   const [status, setStatus] = useState<AuthStatus>("signed-out");
   const [token, setToken] = useState<AccessToken | null>(null);
+  const [userInfo, setUserInfo] = useState<GoogleUserInfo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -65,6 +68,26 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
     handleTokenRef.current = handleToken;
   }, [handleToken]);
 
+  // Recupera nome e foto profilo per mostrarli in testata; non critico per il
+  // resto dell'app, quindi un fallimento qui viene semplicemente ignorato.
+  useEffect(() => {
+    if (!token) {
+      startTransition(() => setUserInfo(null));
+      return;
+    }
+    let cancelled = false;
+    fetchGoogleUserInfo(token.value)
+      .then((info) => {
+        if (!cancelled) setUserInfo(info);
+      })
+      .catch(() => {
+        if (!cancelled) setUserInfo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const handleError = useCallback((message: string) => {
     setStatus("error");
     setErrorMessage(message);
@@ -84,5 +107,5 @@ export function useGoogleAuth(clientId: string): UseGoogleAuthResult {
 
   useEffect(() => clearRefreshTimer, [clearRefreshTimer]);
 
-  return { status, accessToken: token?.value ?? null, errorMessage, login, logout };
+  return { status, accessToken: token?.value ?? null, userInfo, errorMessage, login, logout };
 }
