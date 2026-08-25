@@ -109,7 +109,8 @@ button {
 
 .leave-balances,
 .expense-form,
-.expenses-summary {
+.expenses-summary,
+.export-view {
   margin-top: 2rem;
   text-align: left;
 }

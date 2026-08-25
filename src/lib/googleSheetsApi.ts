@@ -28,22 +28,29 @@ async function sheetsFetch(url: string, accessToken: string, init?: RequestInit)
   return res;
 }
 
+export interface SheetInfo {
+  title: string;
+  sheetId: number; // "gid", usato per costruire l'URL di export PDF
+}
+
 export interface SpreadsheetMeta {
   title: string;
   sheetTitles: string[];
+  sheets: SheetInfo[];
 }
 
-/** Recupera titolo del foglio e nomi dei tab, per verificare il collegamento. */
+/** Recupera titolo del foglio, nomi e gid dei tab, per verificare il collegamento e costruire l'export PDF. */
 export async function getSpreadsheetMeta(accessToken: string, spreadsheetId: string): Promise<SpreadsheetMeta> {
-  const url = `${SHEETS_API_BASE}/${spreadsheetId}?fields=properties.title,sheets.properties.title`;
+  const url = `${SHEETS_API_BASE}/${spreadsheetId}?fields=properties.title,sheets.properties.title,sheets.properties.sheetId`;
   const res = await sheetsFetch(url, accessToken);
   const data = (await res.json()) as {
     properties: { title: string };
-    sheets: { properties: { title: string } }[];
+    sheets: { properties: { title: string; sheetId: number } }[];
   };
   return {
     title: data.properties.title,
     sheetTitles: data.sheets.map((s) => s.properties.title),
+    sheets: data.sheets.map((s) => ({ title: s.properties.title, sheetId: s.properties.sheetId })),
   };
 }
 
@@ -85,4 +92,10 @@ export async function updateValues(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ values }),
   });
+}
+
+/** Svuota un range (es. prima di rigenerare un report, per non lasciare residui di una versione precedente più lunga). */
+export async function clearValues(accessToken: string, spreadsheetId: string, range: string): Promise<void> {
+  const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`;
+  await sheetsFetch(url, accessToken, { method: "POST" });
 }
