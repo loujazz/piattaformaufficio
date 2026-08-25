@@ -1,0 +1,38 @@
+.app {
+  max-width: 32rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+button {
+  padding: 0.6rem 1.2rem;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+
+.error {
+  color: #b00020;
+}
+
+.success {
+  color: #087f23;
+}
+
+.check-result {
+  margin-top: 1rem;
+}
+
+.check-result ul {
+  list-style: none;
+  padding: 0;
+}
+
+.check-result .missing {
+  color: #b00020;
+}
+
+.check-result .ok {
+  color: #087f23;
+}
