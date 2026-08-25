@@ -10,6 +10,26 @@ button {
   margin-right: 0.5rem;
   margin-top: 0.5rem;
   cursor: pointer;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.quick-action {
+  flex: 1;
+  min-height: 56px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  background: #7e14ff;
+  border: none;
+  border-radius: 8px;
+  margin: 0;
 }
 
 .error {
@@ -38,6 +58,13 @@ button {
   margin-top: 1rem;
   border-bottom: 1px solid #e5e4e7;
   padding-bottom: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.view-tabs button {
+  margin: 0;
 }
 
 .view-tabs button.active {
@@ -57,6 +84,13 @@ button {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.75rem;
+  min-height: 44px;
+}
+
+.checkbox-field input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .nav {
@@ -97,9 +131,12 @@ button {
 .field textarea,
 .field select {
   font: inherit;
-  padding: 0.5rem;
+  font-size: 1rem;
+  padding: 0.6rem;
+  min-height: 44px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .absence-form {

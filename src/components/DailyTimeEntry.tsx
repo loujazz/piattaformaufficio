@@ -1,5 +1,5 @@
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
-import { isItalianHoliday, isWeekend, parseISODate, todayLocalISODate } from "../lib/date";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isItalianHoliday, isWeekend, nowLocalHHMM, parseISODate, todayLocalISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 import { computeMinutesWorked, findTimeEntryForDate, formatMinutes, saveTimeEntry } from "../lib/timeEntries";
 
@@ -23,6 +23,10 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
   const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  // Applicato dopo il caricamento, per evitare che il fetch del giorno sovrascriva
+  // l'orario "ora" impostato da un'azione rapida quando si cambia data insieme ad essa.
+  const pendingQuickAction = useRef<"checkIn" | "checkOut" | null>(null);
 
   const dayInfo = useMemo(() => {
     const parsed = parseISODate(date);
@@ -54,7 +58,14 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
         setOffSiteLocation("");
         setRowNumber(null);
       }
+      if (pendingQuickAction.current === "checkIn") {
+        setCheckIn(nowLocalHHMM());
+      } else if (pendingQuickAction.current === "checkOut") {
+        setCheckOut(nowLocalHHMM());
+      }
+      pendingQuickAction.current = null;
     } catch (err) {
+      pendingQuickAction.current = null;
       setLoadError(err instanceof SheetsApiError ? err.message : "Errore nel caricamento del giorno selezionato.");
     } finally {
       setLoading(false);
@@ -129,10 +140,41 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
   ]);
 
   const livePreviewMinutes = checkIn && checkOut && checkOut > checkIn ? computeMinutesWorked(checkIn, checkOut) : null;
+  const isToday = date === todayLocalISODate();
+
+  const handleQuickCheckIn = useCallback(() => {
+    const todayIso = todayLocalISODate();
+    if (date === todayIso) {
+      setCheckIn(nowLocalHHMM());
+    } else {
+      pendingQuickAction.current = "checkIn";
+      setDate(todayIso);
+    }
+  }, [date]);
+
+  const handleQuickCheckOut = useCallback(() => {
+    const todayIso = todayLocalISODate();
+    if (date === todayIso) {
+      setCheckOut(nowLocalHHMM());
+    } else {
+      pendingQuickAction.current = "checkOut";
+      setDate(todayIso);
+    }
+  }, [date]);
 
   return (
     <section className="daily-entry">
       <h2>Vista giornaliera</h2>
+
+      <div className="quick-actions">
+        <button type="button" className="quick-action" onClick={handleQuickCheckIn}>
+          Entra ora
+        </button>
+        <button type="button" className="quick-action" onClick={handleQuickCheckOut}>
+          Esci ora
+        </button>
+      </div>
+      {!isToday && <p className="hint">Stai modificando un giorno diverso da oggi.</p>}
 
       <label className="field">
         Giorno

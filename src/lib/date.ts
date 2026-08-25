@@ -10,6 +10,14 @@ export function todayLocalISODate(): string {
   return toISODate(new Date());
 }
 
+/** Ora corrente in formato HH:MM nel fuso orario locale del browser, per il check-in/out rapido. */
+export function nowLocalHHMM(): string {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 /** Costruisce una Date a mezzanotte locale da una stringa YYYY-MM-DD (evita problemi di fuso orario di `new Date(string)`). */
 export function parseISODate(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
