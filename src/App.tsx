@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { AbsencesView } from "./components/AbsencesView";
+import { AssignmentsView } from "./components/AssignmentsView";
 import { DailyTimeEntry } from "./components/DailyTimeEntry";
 import { ExpensesView } from "./components/ExpensesView";
 import { ExportView } from "./components/ExportView";
@@ -19,7 +20,7 @@ const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID;
 
 const EXPECTED_TABS = ["TimeEntries", "AbsenceEntries", "ExpenseEntries", "LeaveConfig", "ReportTemplate"];
 
-type ViewName = "daily" | "weekly" | "monthly" | "absences" | "expenses" | "export";
+type ViewName = "daily" | "weekly" | "monthly" | "absences" | "expenses" | "assignments" | "export";
 
 interface ConnectionCheck {
   spreadsheetTitle: string;
@@ -49,7 +50,7 @@ function App() {
     setCheckError(null);
     try {
       const meta = await getSpreadsheetMeta(accessToken, SPREADSHEET_ID);
-      const headers = await getValues(accessToken, SPREADSHEET_ID, "TimeEntries!A1:H1");
+      const headers = await getValues(accessToken, SPREADSHEET_ID, "TimeEntries!A1:I1");
       setCheck({
         spreadsheetTitle: meta.title,
         foundTabs: meta.sheetTitles,
@@ -127,6 +128,9 @@ function App() {
             <button className={view === "expenses" ? "active" : undefined} onClick={() => setView("expenses")}>
               Spese
             </button>
+            <button className={view === "assignments" ? "active" : undefined} onClick={() => setView("assignments")}>
+              Incarichi
+            </button>
             <button className={view === "export" ? "active" : undefined} onClick={() => setView("export")}>
               Export
             </button>
@@ -148,6 +152,7 @@ function App() {
           )}
           {view === "absences" && <AbsencesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "expenses" && <ExpensesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "assignments" && <AssignmentsView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "export" && <ExportView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
 
           <details className="diagnostics">

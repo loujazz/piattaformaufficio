@@ -32,6 +32,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
   const [weekendOverride, setWeekendOverride] = useState(false);
   const [offSite, setOffSite] = useState(false);
   const [offSiteLocation, setOffSiteLocation] = useState("");
+  const [assignmentLink, setAssignmentLink] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     setWeekendOverride(false);
     setOffSite(false);
     setOffSiteLocation("");
+    setAssignmentLink("");
   }, []);
 
   const loadSegments = useCallback(async () => {
@@ -113,6 +115,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     setWeekendOverride(segment.isWeekendOverride);
     setOffSite(segment.offSite);
     setOffSiteLocation(segment.offSiteLocation);
+    setAssignmentLink(segment.assignmentLink);
     setFormError(null);
     setSavedMessage(null);
   }, []);
@@ -171,6 +174,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
           offSite,
           offSiteLocation: offSite ? offSiteLocation.trim() : "",
           isWeekendOverride: dayInfo.nonWorking ? weekendOverride : false,
+          assignmentLink: assignmentLink.trim(),
         },
         editingRowNumber,
       );
@@ -191,6 +195,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     weekendOverride,
     offSite,
     offSiteLocation,
+    assignmentLink,
     dayInfo,
     editingRowNumber,
     loadSegments,
@@ -240,6 +245,11 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
                       {segment.checkIn}–{segment.checkOut} ({formatMinutes(segment.minutesWorked)})
                     </span>
                     {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
+                    {segment.assignmentLink && (
+                      <a className="segment-tag" href={segment.assignmentLink} target="_blank" rel="noreferrer">
+                        📄 Incarico
+                      </a>
+                    )}
                     {segment.activityNote && <span className="segment-note">{segment.activityNote}</span>}
                     <span className="segment-actions">
                       <button type="button" onClick={() => handleEditSegment(segment)}>
@@ -304,6 +314,16 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
               />
             </label>
           )}
+
+          <label className="field">
+            Incarico (link Drive)
+            <input
+              type="url"
+              value={assignmentLink}
+              onChange={(e) => setAssignmentLink(e.target.value)}
+              placeholder="https://drive.google.com/..."
+            />
+          </label>
 
           {livePreviewMinutes !== null && <p className="hint">Ore del turno: {formatMinutes(livePreviewMinutes)}</p>}
 

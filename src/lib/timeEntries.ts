@@ -9,11 +9,12 @@ export interface TimeEntry {
   offSite: boolean;
   offSiteLocation: string;
   isWeekendOverride: boolean;
+  assignmentLink: string; // link Drive al PDF dell'incarico per quel turno, opzionale
   rowNumber: number; // numero di riga nel foglio (1-based, header = riga 1)
 }
 
 const SHEET = "TimeEntries";
-const DATA_RANGE = `${SHEET}!A2:H`;
+const DATA_RANGE = `${SHEET}!A2:I`;
 
 function toMinutesSinceMidnight(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
@@ -44,6 +45,7 @@ function parseRow(row: string[], rowNumber: number): TimeEntry {
     offSite: isTrue(row[5]),
     offSiteLocation: row[6] ?? "",
     isWeekendOverride: isTrue(row[7]),
+    assignmentLink: row[8] ?? "",
     rowNumber,
   };
 }
@@ -52,6 +54,12 @@ function parseRow(row: string[], rowNumber: number): TimeEntry {
 export async function listTimeEntries(accessToken: string, spreadsheetId: string): Promise<TimeEntry[]> {
   const rows = await getValues(accessToken, spreadsheetId, DATA_RANGE);
   return rows.map((row, i) => parseRow(row, i + 2)).filter((entry) => entry.date);
+}
+
+/** Turni con un link di incarico compilato, dal più recente. */
+export async function listAssignments(accessToken: string, spreadsheetId: string): Promise<TimeEntry[]> {
+  const entries = await listTimeEntries(accessToken, spreadsheetId);
+  return entries.filter((e) => e.assignmentLink.trim()).sort((a, b) => b.date.localeCompare(a.date) || b.checkIn.localeCompare(a.checkIn));
 }
 
 /** Turni già salvati per una data (YYYY-MM-DD), ordinati per orario di entrata. */
@@ -112,12 +120,13 @@ export async function saveTimeEntry(
       entry.offSite,
       entry.offSiteLocation,
       entry.isWeekendOverride,
+      entry.assignmentLink,
     ],
   ];
   if (rowNumber !== null) {
-    await updateValues(accessToken, spreadsheetId, `${SHEET}!A${rowNumber}:H${rowNumber}`, values);
+    await updateValues(accessToken, spreadsheetId, `${SHEET}!A${rowNumber}:I${rowNumber}`, values);
   } else {
-    await appendValues(accessToken, spreadsheetId, `${SHEET}!A:H`, values);
+    await appendValues(accessToken, spreadsheetId, `${SHEET}!A:I`, values);
   }
 }
 

@@ -212,6 +212,7 @@ button:disabled {
 .leave-balances,
 .expense-form,
 .expenses-summary,
+.assignments-view,
 .export-view {
   margin-top: 28px;
   text-align: left;
@@ -230,6 +231,7 @@ button:disabled {
   .leave-balances,
   .expense-form,
   .expenses-summary,
+  .assignments-view,
   .export-view {
     padding: 18px 16px;
   }
