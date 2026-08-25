@@ -7,9 +7,10 @@ import { MonthPickerField } from "./MonthPickerField";
 interface MonthlyViewProps {
   accessToken: string;
   spreadsheetId: string;
+  onSelectDay: (iso: string) => void;
 }
 
-export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
+export function MonthlyView({ accessToken, spreadsheetId, onSelectDay }: MonthlyViewProps) {
   const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()));
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +80,11 @@ export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
             const summary = summarizeDay(daySegments);
             const nonWorking = isWeekend(day) || isItalianHoliday(day);
             return (
-              <tr key={iso} className={nonWorking ? "non-working" : undefined}>
+              <tr
+                key={iso}
+                className={nonWorking ? "non-working clickable-row" : "clickable-row"}
+                onClick={() => onSelectDay(iso)}
+              >
                 <td>
                   {dayLabelIt(day)} {iso}
                   {daySegments.length > 1 && <span className="hint"> ({daySegments.length} turni)</span>}

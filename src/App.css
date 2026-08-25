@@ -607,6 +607,14 @@ button:disabled {
   background: var(--surface-2);
 }
 
+.entries-table tr.clickable-row {
+  cursor: pointer;
+}
+
+.entries-table tr.clickable-row:hover td {
+  background: var(--accent-bg);
+}
+
 .entries-table tr.non-working td {
   background: var(--surface-2);
   color: var(--text-soft);

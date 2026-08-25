@@ -7,9 +7,10 @@ import { WeekPickerField } from "./WeekPickerField";
 interface WeeklyViewProps {
   accessToken: string;
   spreadsheetId: string;
+  onSelectDay: (iso: string) => void;
 }
 
-export function WeeklyView({ accessToken, spreadsheetId }: WeeklyViewProps) {
+export function WeeklyView({ accessToken, spreadsheetId, onSelectDay }: WeeklyViewProps) {
   const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date()));
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,7 +79,11 @@ export function WeeklyView({ accessToken, spreadsheetId }: WeeklyViewProps) {
             const summary = summarizeDay(daySegments);
             const nonWorking = isWeekend(day) || isItalianHoliday(day);
             return (
-              <tr key={iso} className={nonWorking ? "non-working" : undefined}>
+              <tr
+                key={iso}
+                className={nonWorking ? "non-working clickable-row" : "clickable-row"}
+                onClick={() => onSelectDay(iso)}
+              >
                 <td>
                   {dayLabelIt(day)} {iso}
                   {nonWorking && daySegments.length === 0 && <span className="hint"> (non lavorativo)</span>}

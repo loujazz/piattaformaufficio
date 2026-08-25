@@ -15,10 +15,11 @@ import {
 interface DailyTimeEntryProps {
   accessToken: string;
   spreadsheetId: string;
+  date: string;
+  onDateChange: (iso: string) => void;
 }
 
-export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryProps) {
-  const [date, setDate] = useState(todayLocalISODate);
+export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange }: DailyTimeEntryProps) {
   const [segments, setSegments] = useState<TimeEntry[]>([]);
   const [loadingSegments, setLoadingSegments] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -90,9 +91,9 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
       setCheckIn(nowLocalHHMM());
     } else {
       pendingQuickAction.current = "checkIn";
-      setDate(todayIso);
+      onDateChange(todayIso);
     }
-  }, [date, resetFormForNewSegment]);
+  }, [date, onDateChange, resetFormForNewSegment]);
 
   const handleQuickCheckOut = useCallback(() => {
     const todayIso = todayLocalISODate();
@@ -100,9 +101,9 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
       setCheckOut(nowLocalHHMM());
     } else {
       pendingQuickAction.current = "checkOut";
-      setDate(todayIso);
+      onDateChange(todayIso);
     }
-  }, [date]);
+  }, [date, onDateChange]);
 
   const handleEditSegment = useCallback((segment: TimeEntry) => {
     setEditingRowNumber(segment.rowNumber);
@@ -215,7 +216,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
 
       <label className="field">
         Giorno
-        <DayPickerField value={date} onChange={setDate} />
+        <DayPickerField value={date} onChange={onDateChange} />
       </label>
 
       {loadingSegments && <p>Caricamento...</p>}

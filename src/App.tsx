@@ -7,6 +7,7 @@ import { MonthlyView } from "./components/MonthlyView";
 import { WeeklyView } from "./components/WeeklyView";
 import { useGoogleAuth } from "./hooks/useGoogleAuth";
 import { useTheme } from "./hooks/useTheme";
+import { todayLocalISODate } from "./lib/date";
 import { getSpreadsheetMeta, getValues, SheetsApiError } from "./lib/googleSheetsApi";
 import "./App.css";
 
@@ -31,6 +32,12 @@ function App() {
   const { status, accessToken, errorMessage, login, logout } = useGoogleAuth(CLIENT_ID);
   const { theme, cycleTheme } = useTheme();
   const [view, setView] = useState<ViewName>("daily");
+  const [dailyDate, setDailyDate] = useState(todayLocalISODate);
+
+  const handleSelectDay = useCallback((iso: string) => {
+    setDailyDate(iso);
+    setView("daily");
+  }, []);
 
   const [check, setCheck] = useState<ConnectionCheck | null>(null);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -125,9 +132,20 @@ function App() {
             </button>
           </nav>
 
-          {view === "daily" && <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
-          {view === "weekly" && <WeeklyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
-          {view === "monthly" && <MonthlyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "daily" && (
+            <DailyTimeEntry
+              accessToken={accessToken}
+              spreadsheetId={SPREADSHEET_ID}
+              date={dailyDate}
+              onDateChange={setDailyDate}
+            />
+          )}
+          {view === "weekly" && (
+            <WeeklyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} onSelectDay={handleSelectDay} />
+          )}
+          {view === "monthly" && (
+            <MonthlyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} onSelectDay={handleSelectDay} />
+          )}
           {view === "absences" && <AbsencesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "expenses" && <ExpensesView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
           {view === "export" && <ExportView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
