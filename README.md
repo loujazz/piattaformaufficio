@@ -37,6 +37,19 @@ di registrazione presenze arriveranno nelle fasi successive.
 Il foglio Google deve avere questi 5 tab con le intestazioni descritte nella
 specifica del progetto (vedi struttura dati).
 
+## Deploy su Vercel
+
+Il progetto è importato su Vercel collegato a questo repository GitHub.
+
+- Variabili d'ambiente da impostare in Project Settings → Environment
+  Variables (Production + Preview): `VITE_GOOGLE_CLIENT_ID`,
+  `VITE_SPREADSHEET_ID`.
+- Ogni push su un branch genera un Preview Deployment con URL dedicato
+  (`https://<progetto>-git-<branch>-<team>.vercel.app`).
+- L'origine del deployment usato per il login va aggiunta tra le "Origini
+  JavaScript autorizzate" del Client OAuth su Google Cloud Console, altrimenti
+  il login con Google fallisce.
+
 ## Script disponibili
 
 - `npm run dev` — dev server
