@@ -51,6 +51,12 @@ export interface StoredTimeEntry {
   rowNumber: number; // numero di riga nel foglio (1-based, header = riga 1)
 }
 
+/** Legge tutti i TimeEntries salvati, per le viste aggregate settimanale/mensile. */
+export async function listTimeEntries(accessToken: string, spreadsheetId: string): Promise<TimeEntry[]> {
+  const rows = await getValues(accessToken, spreadsheetId, DATA_RANGE);
+  return rows.filter((row) => row[0]).map(parseRow);
+}
+
 /** Cerca l'eventuale TimeEntry già salvato per una data (YYYY-MM-DD). */
 export async function findTimeEntryForDate(
   accessToken: string,

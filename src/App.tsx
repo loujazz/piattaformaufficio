@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { DailyTimeEntry } from "./components/DailyTimeEntry";
+import { MonthlyView } from "./components/MonthlyView";
+import { WeeklyView } from "./components/WeeklyView";
 import { useGoogleAuth } from "./hooks/useGoogleAuth";
 import { getSpreadsheetMeta, getValues, SheetsApiError } from "./lib/googleSheetsApi";
 import "./App.css";
@@ -8,6 +10,8 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID;
 
 const EXPECTED_TABS = ["TimeEntries", "AbsenceEntries", "ExpenseEntries", "LeaveConfig", "ReportTemplate"];
+
+type ViewName = "daily" | "weekly" | "monthly";
 
 interface ConnectionCheck {
   spreadsheetTitle: string;
@@ -18,6 +22,7 @@ interface ConnectionCheck {
 function App() {
   const missingConfig = !CLIENT_ID || !SPREADSHEET_ID;
   const { status, accessToken, errorMessage, login, logout } = useGoogleAuth(CLIENT_ID);
+  const [view, setView] = useState<ViewName>("daily");
 
   const [check, setCheck] = useState<ConnectionCheck | null>(null);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -76,7 +81,21 @@ function App() {
             Esci
           </button>
 
-          <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />
+          <nav className="view-tabs">
+            <button className={view === "daily" ? "active" : undefined} onClick={() => setView("daily")}>
+              Giornaliera
+            </button>
+            <button className={view === "weekly" ? "active" : undefined} onClick={() => setView("weekly")}>
+              Settimanale
+            </button>
+            <button className={view === "monthly" ? "active" : undefined} onClick={() => setView("monthly")}>
+              Mensile
+            </button>
+          </nav>
+
+          {view === "daily" && <DailyTimeEntry accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "weekly" && <WeeklyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
+          {view === "monthly" && <MonthlyView accessToken={accessToken} spreadsheetId={SPREADSHEET_ID} />}
 
           <details className="diagnostics">
             <summary>Diagnostica collegamento foglio</summary>

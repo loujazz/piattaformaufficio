@@ -1,5 +1,5 @@
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { todayLocalISODate } from "../lib/date";
+import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
+import { isItalianHoliday, isWeekend, parseISODate, todayLocalISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 import { computeMinutesWorked, findTimeEntryForDate, formatMinutes, saveTimeEntry } from "../lib/timeEntries";
 
@@ -13,6 +13,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [activityNote, setActivityNote] = useState("");
+  const [weekendOverride, setWeekendOverride] = useState(false);
   const [rowNumber, setRowNumber] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,13 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
   const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  const dayInfo = useMemo(() => {
+    const parsed = parseISODate(date);
+    const weekend = isWeekend(parsed);
+    const holiday = isItalianHoliday(parsed);
+    return { nonWorking: weekend || holiday, weekend, holiday };
+  }, [date]);
 
   const loadEntry = useCallback(async () => {
     setLoading(true);
@@ -31,11 +39,13 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
         setCheckIn(stored.entry.checkIn);
         setCheckOut(stored.entry.checkOut);
         setActivityNote(stored.entry.activityNote);
+        setWeekendOverride(stored.entry.isWeekendOverride);
         setRowNumber(stored.rowNumber);
       } else {
         setCheckIn("");
         setCheckOut("");
         setActivityNote("");
+        setWeekendOverride(false);
         setRowNumber(null);
       }
     } catch (err) {
@@ -63,6 +73,10 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
       setFormError("L'orario di uscita deve essere successivo a quello di entrata.");
       return;
     }
+    if (dayInfo.nonWorking && !weekendOverride) {
+      setFormError("Questo giorno non è lavorativo (weekend o festività). Spunta la conferma per registrare comunque le ore.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -78,7 +92,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
           activityNote,
           offSite: false,
           offSiteLocation: "",
-          isWeekendOverride: false,
+          isWeekendOverride: dayInfo.nonWorking ? weekendOverride : false,
         },
         rowNumber,
       );
@@ -89,7 +103,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
     } finally {
       setSaving(false);
     }
-  }, [accessToken, spreadsheetId, date, checkIn, checkOut, activityNote, rowNumber, loadEntry]);
+  }, [accessToken, spreadsheetId, date, checkIn, checkOut, activityNote, weekendOverride, dayInfo, rowNumber, loadEntry]);
 
   const livePreviewMinutes = checkIn && checkOut && checkOut > checkIn ? computeMinutesWorked(checkIn, checkOut) : null;
 
@@ -108,6 +122,12 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
       {!loading && (
         <>
           {rowNumber !== null && <p className="hint">Presenza già registrata per questo giorno: la modifica la sovrascrive.</p>}
+
+          {dayInfo.nonWorking && (
+            <p className="warning">
+              ⚠️ {dayInfo.holiday ? "Festività" : "Weekend"}: giorno normalmente non lavorativo.
+            </p>
+          )}
 
           <label className="field">
             Entrata
@@ -128,6 +148,13 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
               placeholder="Cosa hai fatto oggi..."
             />
           </label>
+
+          {dayInfo.nonWorking && (
+            <label className="checkbox-field">
+              <input type="checkbox" checked={weekendOverride} onChange={(e) => setWeekendOverride(e.target.checked)} />
+              Registra comunque le ore per questo giorno (evento/missione)
+            </label>
+          )}
 
           {livePreviewMinutes !== null && <p className="hint">Ore lavorate: {formatMinutes(livePreviewMinutes)}</p>}
 

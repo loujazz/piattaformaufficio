@@ -1,5 +1,5 @@
 .app {
-  max-width: 32rem;
+  max-width: 40rem;
   margin: 2rem auto;
   padding: 0 1rem;
   font-family: system-ui, sans-serif;
@@ -25,13 +25,64 @@ button {
   font-size: 0.9em;
 }
 
+.warning {
+  color: #a15c00;
+}
+
 .logout {
   float: right;
 }
 
-.daily-entry {
+.view-tabs {
   clear: both;
   margin-top: 1rem;
+  border-bottom: 1px solid #e5e4e7;
+  padding-bottom: 0.5rem;
+}
+
+.view-tabs button.active {
+  background: #08060d;
+  color: #fff;
+}
+
+.daily-entry,
+.weekly-view,
+.monthly-view {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.nav {
+  margin-bottom: 0.5rem;
+}
+
+.entries-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+.entries-table th,
+.entries-table td {
+  border: 1px solid #e5e4e7;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  font-size: 0.95em;
+}
+
+.entries-table tr.non-working {
+  background: #f4f3ec;
+}
+
+.entries-table tfoot td {
+  border-top: 2px solid #08060d;
 }
 
 .field {
