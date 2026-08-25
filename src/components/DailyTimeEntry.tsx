@@ -1,6 +1,7 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isItalianHoliday, isWeekend, nowLocalHHMM, parseISODate, todayLocalISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
+import { DayPickerField } from "./DayPickerField";
 import {
   computeMinutesWorked,
   deleteTimeEntry,
@@ -214,7 +215,7 @@ export function DailyTimeEntry({ accessToken, spreadsheetId }: DailyTimeEntryPro
 
       <label className="field">
         Giorno
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <DayPickerField value={date} onChange={setDate} />
       </label>
 
       {loadingSegments && <p>Caricamento...</p>}

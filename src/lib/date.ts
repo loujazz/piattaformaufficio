@@ -43,27 +43,21 @@ export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-/** Valore per <input type="week"> (es. "2026-W35") della settimana ISO contenente la data. */
-export function toISOWeekValue(date: Date): string {
-  const thursday = addDays(date, 4 - (date.getDay() === 0 ? 7 : date.getDay()));
-  const firstJan = new Date(thursday.getFullYear(), 0, 1);
-  const weekNumber = Math.ceil(((thursday.getTime() - firstJan.getTime()) / 86400000 + 1) / 7);
-  return `${thursday.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+export function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
 }
 
-/** Converte un valore di <input type="week"> nel lunedì (a mezzanotte locale) di quella settimana ISO. */
-export function fromISOWeekValue(value: string): Date {
-  const [yearStr, weekStr] = value.split("-W");
-  const year = Number(yearStr);
-  const week = Number(weekStr);
-  const jan4 = new Date(year, 0, 4);
-  const jan4Day = jan4.getDay() === 0 ? 7 : jan4.getDay();
-  const week1Monday = addDays(jan4, 1 - jan4Day);
-  return addDays(week1Monday, (week - 1) * 7);
+export function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 export function daysInMonth(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+/** Primo giorno (lunedì) della griglia di 6 settimane che copre il mese di viewMonth. */
+export function startOfCalendarGrid(viewMonth: Date): Date {
+  return startOfWeekMonday(startOfMonth(viewMonth));
 }
 
 const GIORNI_IT = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];

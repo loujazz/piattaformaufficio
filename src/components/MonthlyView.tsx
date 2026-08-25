@@ -2,14 +2,11 @@ import { startTransition, useCallback, useEffect, useMemo, useState } from "reac
 import { dayLabelIt, daysInMonth, isItalianHoliday, isWeekend, monthLabelIt, startOfMonth, toISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 import { formatMinutes, groupTimeEntriesByDate, listTimeEntries, summarizeDay, type TimeEntry } from "../lib/timeEntries";
+import { MonthPickerField } from "./MonthPickerField";
 
 interface MonthlyViewProps {
   accessToken: string;
   spreadsheetId: string;
-}
-
-function toMonthInputValue(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
@@ -56,16 +53,7 @@ export function MonthlyView({ accessToken, spreadsheetId }: MonthlyViewProps) {
         <button onClick={() => setMonthStart((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>← Mese prec.</button>
         <button onClick={() => setMonthStart(startOfMonth(new Date()))}>Oggi</button>
         <button onClick={() => setMonthStart((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>Mese succ. →</button>
-        <input
-          type="month"
-          className="month-picker"
-          value={toMonthInputValue(monthStart)}
-          onChange={(e) => {
-            if (!e.target.value) return;
-            const [y, m] = e.target.value.split("-").map(Number);
-            setMonthStart(new Date(y, m - 1, 1));
-          }}
-        />
+        <MonthPickerField monthStart={monthStart} onChange={setMonthStart} />
         <button onClick={() => void loadEntries()} disabled={loading}>
           {loading ? "Aggiornamento..." : "Aggiorna"}
         </button>

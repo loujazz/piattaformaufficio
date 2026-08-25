@@ -1,16 +1,8 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
-import {
-  addDays,
-  dayLabelIt,
-  fromISOWeekValue,
-  isItalianHoliday,
-  isWeekend,
-  startOfWeekMonday,
-  toISODate,
-  toISOWeekValue,
-} from "../lib/date";
+import { addDays, dayLabelIt, isItalianHoliday, isWeekend, startOfWeekMonday, toISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 import { formatMinutes, groupTimeEntriesByDate, listTimeEntries, summarizeDay, type TimeEntry } from "../lib/timeEntries";
+import { WeekPickerField } from "./WeekPickerField";
 
 interface WeeklyViewProps {
   accessToken: string;
@@ -58,14 +50,7 @@ export function WeeklyView({ accessToken, spreadsheetId }: WeeklyViewProps) {
         <button onClick={() => setWeekStart((d) => addDays(d, -7))}>← Settimana prec.</button>
         <button onClick={() => setWeekStart(startOfWeekMonday(new Date()))}>Oggi</button>
         <button onClick={() => setWeekStart((d) => addDays(d, 7))}>Settimana succ. →</button>
-        <input
-          type="week"
-          className="week-picker"
-          value={toISOWeekValue(weekStart)}
-          onChange={(e) => {
-            if (e.target.value) setWeekStart(fromISOWeekValue(e.target.value));
-          }}
-        />
+        <WeekPickerField weekStart={weekStart} onChange={setWeekStart} />
         <button onClick={() => void loadEntries()} disabled={loading}>
           {loading ? "Aggiornamento..." : "Aggiorna"}
         </button>

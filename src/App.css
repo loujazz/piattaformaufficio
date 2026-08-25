@@ -281,11 +281,19 @@ button:disabled {
   border-color: var(--border-strong);
 }
 
-/* Selettore diretto di settimana/mese, accanto ai bottoni prec/succ. */
-.week-picker,
-.month-picker {
+/* ---------- Campo con calendario (giorno / settimana / mese) ---------- */
+
+.picker-field {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.picker-field input {
   font: inherit;
   font-size: 0.9rem;
+  font-family: var(--mono);
   color: var(--text-h);
   background: var(--surface);
   padding: 0 12px;
@@ -293,6 +301,112 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-sizing: border-box;
+}
+
+.picker-trigger {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.picker-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.calendar-grid {
+  width: 17rem;
+}
+
+.calendar-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 10px;
+}
+
+.calendar-grid-header button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+  margin: 0;
+}
+
+.calendar-grid-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+
+.calendar-grid-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-grid-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.calendar-grid-days button,
+.calendar-grid-months button {
+  min-height: 34px;
+  padding: 0;
+  margin: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-h);
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.calendar-grid-days button:hover:not(:disabled),
+.calendar-grid-months button:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.calendar-grid-days button.outside {
+  color: var(--text-soft);
+  opacity: 0.5;
+}
+
+.calendar-grid-days button.non-working {
+  color: var(--text-soft);
+}
+
+.calendar-grid-days button.in-week {
+  background: var(--accent-bg);
+  border-radius: 0;
+}
+
+.calendar-grid-days button.in-week:first-child,
+.calendar-grid-days button.in-week:nth-child(7n + 1) {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.calendar-grid-days button.selected,
+.calendar-grid-months button.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
 }
 
 /* Seconda intestazione dentro una sezione (es. "Assenze registrate" sotto ai saldi). */
