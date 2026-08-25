@@ -1,130 +1,235 @@
 .app {
-  max-width: 40rem;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  font-family: system-ui, sans-serif;
+  /* Prima 40rem: su desktop restava una colonna stretta con tabelle compresse. */
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+  font-family: var(--sans);
+  width: 100%;
+  box-sizing: border-box;
 }
 
+@media (max-width: 640px) {
+  .app {
+    padding: 20px 16px 96px;
+  }
+}
+
+/* ---------- Testata ---------- */
+
+.app > h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app > h1::before {
+  content: 'P';
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+/* ---------- Bottoni ---------- */
+
 button {
-  padding: 0.6rem 1.2rem;
-  margin-right: 0.5rem;
-  margin-top: 0.5rem;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 500;
+  padding: 0 16px;
+  margin: 0;
+  min-height: var(--tap);
   cursor: pointer;
-  min-height: 44px;
-  font-size: 1rem;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Azione principale: l'ultimo bottone di ogni form (Salva/Aggiorna/Genera). */
+.daily-entry > button,
+.absence-form > button,
+.expense-form > button,
+.export-view > button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  min-height: 48px;
+  padding: 0 22px;
+  margin-top: 20px;
+}
+
+.daily-entry > button:hover:not(:disabled),
+.absence-form > button:hover:not(:disabled),
+.expense-form > button:hover:not(:disabled),
+.export-view > button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .quick-actions {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 12px;
+  margin-top: 4px;
 }
 
 .quick-action {
   flex: 1;
   min-height: 56px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #fff;
-  background: #7e14ff;
-  border: none;
-  border-radius: 8px;
-  margin: 0;
+  color: var(--accent-text);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 9px;
 }
 
-.error {
-  color: #b00020;
+/* La seconda azione rapida ("Esci ora") in versione secondaria: due bottoni
+   pieni identici non dicono quale sia l'azione prevalente. */
+.quick-action:last-child {
+  background: var(--accent-bg);
+  color: var(--text-h);
+  border-color: var(--accent-border);
 }
 
-.success {
-  color: #087f23;
-}
-
-.hint {
-  color: #555;
-  font-size: 0.9em;
-}
-
-.warning {
-  color: #a15c00;
+.quick-action:hover {
+  filter: brightness(1.06);
 }
 
 .logout {
   float: right;
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin-top: -46px;
 }
+
+/* ---------- Navigazione viste ---------- */
 
 .view-tabs {
   clear: both;
-  margin-top: 1rem;
-  border-bottom: 1px solid #e5e4e7;
-  padding-bottom: 0.5rem;
+  margin-top: 20px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 0 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 4px;
+}
+
+.view-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .view-tabs button {
   margin: 0;
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+.view-tabs button:hover:not(.active) {
+  background: var(--surface-2);
+  border-color: transparent;
 }
 
 .view-tabs button.active {
-  background: #08060d;
-  color: #fff;
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--text-h);
+  font-weight: 600;
 }
+
+/* Barra inferiore su mobile: 6 tab a capo occupavano mezzo schermo. */
+@media (max-width: 640px) {
+  .view-tabs {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 20;
+    margin: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    box-shadow: var(--shadow);
+  }
+
+  .view-tabs button {
+    flex: 1;
+    padding: 0 6px;
+    font-size: 0.78rem;
+    min-height: 48px;
+  }
+}
+
+/* ---------- Sezioni ---------- */
 
 .daily-entry,
 .weekly-view,
-.monthly-view {
-  margin-top: 1rem;
+.monthly-view,
+.absence-form,
+.leave-balances,
+.expense-form,
+.expenses-summary,
+.export-view {
+  margin-top: 28px;
   text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
 }
 
-.checkbox-field {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  min-height: 44px;
+@media (max-width: 640px) {
+  .daily-entry,
+  .weekly-view,
+  .monthly-view,
+  .absence-form,
+  .leave-balances,
+  .expense-form,
+  .expenses-summary,
+  .export-view {
+    padding: 18px 16px;
+  }
 }
 
-.checkbox-field input {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.nav {
-  margin-bottom: 0.5rem;
-}
-
-.entries-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.75rem;
-}
-
-.entries-table th,
-.entries-table td {
-  border: 1px solid #e5e4e7;
-  padding: 0.4rem 0.6rem;
-  text-align: left;
-  font-size: 0.95em;
-}
-
-.entries-table tr.non-working {
-  background: #f4f3ec;
-}
-
-.entries-table tfoot td {
-  border-top: 2px solid #08060d;
-}
+/* ---------- Campi ---------- */
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.75rem;
+  gap: 7px;
+  margin-top: 18px;
   text-align: left;
+  font-size: 0.88rem;
+  color: var(--text-soft);
 }
 
 .field input,
@@ -132,65 +237,255 @@ button {
 .field select {
   font: inherit;
   font-size: 1rem;
-  padding: 0.6rem;
-  min-height: 44px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  color: var(--text-h);
+  background: var(--bg);
+  padding: 0 13px;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   box-sizing: border-box;
 }
 
-.absence-form {
-  margin-top: 1rem;
-  text-align: left;
+.field textarea {
+  padding: 13px;
+  line-height: 1.5;
+  resize: vertical;
 }
 
-.leave-balances,
-.expense-form,
-.expenses-summary,
-.export-view {
-  margin-top: 2rem;
-  text-align: left;
+.field input[type='time'],
+.field input[type='date'],
+.field input[type='number'] {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  max-width: 15rem;
 }
 
-.totals-table {
-  max-width: 24rem;
+.field input:hover,
+.field textarea:hover,
+.field select:hover {
+  border-color: var(--border-strong);
 }
+
+/* Entrata / Uscita affiancate: sono un'unica decisione. */
+@media (min-width: 760px) {
+  .daily-entry .field:has(input[type='time']) {
+    display: inline-flex;
+    width: calc(50% - 8px);
+    margin-right: 16px;
+    vertical-align: top;
+  }
+
+  .daily-entry .field:has(input[type='time']) + .field:has(input[type='time']) {
+    margin-right: 0;
+  }
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  min-height: var(--tap);
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.checkbox-field input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+/* ---------- Messaggi ---------- */
+
+.error,
+.success,
+.warning {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  border: 1px solid;
+}
+
+.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.success {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.warning {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+.hint {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  margin-top: 10px;
+}
+
+/* ---------- Navigazione periodo ---------- */
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.nav button {
+  min-height: var(--tap);
+}
+
+/* ---------- Tabelle ---------- */
 
 .entries-table {
-  overflow-x: auto;
-  display: block;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  display: table;
+  font-size: 0.95rem;
+}
+
+.entries-table th,
+.entries-table td {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 13px 12px;
+  text-align: left;
+}
+
+.entries-table th {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding-bottom: 10px;
+  white-space: nowrap;
+}
+
+.entries-table th:first-child,
+.entries-table td:first-child {
+  padding-left: 0;
+  color: var(--text-h);
+}
+
+/* Orari, ore, importi: monospace e allineati a destra. */
+.entries-table th:not(:first-child),
+.entries-table td:not(:first-child) {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text-h);
+  padding-right: 0;
+  white-space: nowrap;
+}
+
+.entries-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+.entries-table tr.non-working td {
+  background: var(--surface-2);
+  color: var(--text-soft);
+}
+
+.entries-table tr.non-working td:first-child {
+  color: var(--text-soft);
+}
+
+.entries-table tfoot td {
+  border-top: 1px solid var(--border-strong);
+  border-bottom: none;
+  font-size: 1rem;
+  padding-top: 16px;
+  color: var(--text-h);
 }
 
 .entries-table tr.negative td {
-  color: #b00020;
+  color: var(--danger);
   font-weight: 600;
 }
 
-.diagnostics {
-  margin-top: 2rem;
-  border-top: 1px solid #e5e4e7;
-  padding-top: 1rem;
+/* Descrizioni lunghe: la colonna testo può andare a capo. */
+.expenses-summary .entries-table td:nth-child(4) {
+  font-family: var(--sans);
   text-align: left;
+  white-space: normal;
+  min-width: 14rem;
+}
+
+.totals-table {
+  max-width: 26rem;
+}
+
+.totals-table td:first-child {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .entries-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* ---------- Diagnostica ---------- */
+
+.diagnostics {
+  margin-top: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  text-align: left;
+  background: var(--surface);
 }
 
 .diagnostics summary {
   cursor: pointer;
-  color: #555;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  min-height: 28px;
+}
+
+.diagnostics[open] summary {
+  margin-bottom: 12px;
 }
 
 .check-result {
-  margin-top: 1rem;
+  margin-top: 14px;
+  font-size: 0.92rem;
 }
 
 .check-result ul {
   list-style: none;
   padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.check-result li {
+  font-family: var(--mono);
+  font-size: 0.85rem;
 }
 
 .check-result .missing {
-  color: #b00020;
+  color: var(--danger);
 }
 
 .check-result .ok {
-  color: #087f23;
+  color: var(--ok);
 }
