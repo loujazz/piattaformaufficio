@@ -89,6 +89,7 @@ export function MonthlyView({ accessToken, spreadsheetId, onSelectDay }: Monthly
                   {dayLabelIt(day)} {iso}
                   {summary.segments.length > 1 && <span className="hint"> ({summary.segments.length} turni)</span>}
                   {daySegments.some((e) => !e.checkIn && e.assignmentLink) && <span className="hint"> 📄</span>}
+                  {daySegments.some((e) => e.checkIn && !e.checkOut) && <span className="hint"> 🕐 in corso</span>}
                 </td>
                 <td>{summary.firstCheckIn || "—"}</td>
                 <td>{summary.lastCheckOut || "—"}</td>

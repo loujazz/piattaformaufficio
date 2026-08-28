@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
 import { isItalianHoliday, isWeekend, nowLocalHHMM, parseISODate, todayLocalISODate } from "../lib/date";
 import { SheetsApiError } from "../lib/googleSheetsApi";
 import { DayPickerField } from "./DayPickerField";
@@ -39,10 +39,6 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
   const [formError, setFormError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
-  // Applicato dopo il caricamento, per evitare che il fetch del giorno sovrascriva
-  // l'orario "ora" impostato da un'azione rapida quando si cambia data insieme ad essa.
-  const pendingQuickAction = useRef<"checkIn" | "checkOut" | null>(null);
-
   const dayInfo = useMemo(() => {
     const parsed = parseISODate(date);
     const weekend = isWeekend(parsed);
@@ -74,12 +70,6 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
       setLoadingSegments(false);
     }
     resetFormForNewSegment();
-    if (pendingQuickAction.current === "checkIn") {
-      setCheckIn(nowLocalHHMM());
-    } else if (pendingQuickAction.current === "checkOut") {
-      setCheckOut(nowLocalHHMM());
-    }
-    pendingQuickAction.current = null;
   }, [accessToken, spreadsheetId, date, resetFormForNewSegment]);
 
   useEffect(() => {
@@ -88,26 +78,101 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
     });
   }, [loadSegments]);
 
-  const handleQuickCheckIn = useCallback(() => {
+  // "Entra ora"/"Esci ora" salvano subito su Sheets (non si limitano a precompilare
+  // il modulo): un turno "aperto" ha checkIn valorizzato e checkOut vuoto finché non
+  // viene chiuso da "Esci ora" (o modificato a mano dal modulo qui sotto).
+  const handleQuickCheckIn = useCallback(async () => {
     const todayIso = todayLocalISODate();
-    if (date === todayIso) {
-      resetFormForNewSegment();
-      setCheckIn(nowLocalHHMM());
-    } else {
-      pendingQuickAction.current = "checkIn";
-      onDateChange(todayIso);
+    setFormError(null);
+    setSavedMessage(null);
+    setSaving(true);
+    try {
+      const todaySegments = await listTimeEntriesForDate(accessToken, spreadsheetId, todayIso);
+      const openEntry = todaySegments.find((s) => s.checkIn && !s.checkOut);
+      if (openEntry) {
+        setFormError(`Hai già un'entrata in corso da oggi alle ${openEntry.checkIn}. Usa "Esci ora" per chiuderla.`);
+        return;
+      }
+      const todayParsed = parseISODate(todayIso);
+      const todayNonWorking = isWeekend(todayParsed) || isItalianHoliday(todayParsed);
+      await saveTimeEntry(
+        accessToken,
+        spreadsheetId,
+        {
+          date: todayIso,
+          checkIn: nowLocalHHMM(),
+          checkOut: "",
+          minutesWorked: 0,
+          activityNote: "",
+          offSite: false,
+          offSiteLocation: "",
+          isWeekendOverride: todayNonWorking,
+          assignmentLink: "",
+          assignmentTitle: "",
+        },
+        null,
+      );
+      setSavedMessage("Entrata registrata.");
+      if (date === todayIso) {
+        setSegments(await listTimeEntriesForDate(accessToken, spreadsheetId, todayIso));
+      } else {
+        onDateChange(todayIso);
+      }
+    } catch (err) {
+      setFormError(err instanceof SheetsApiError ? err.message : "Errore nella registrazione dell'entrata.");
+    } finally {
+      setSaving(false);
     }
-  }, [date, onDateChange, resetFormForNewSegment]);
+  }, [accessToken, spreadsheetId, date, onDateChange]);
 
-  const handleQuickCheckOut = useCallback(() => {
+  const handleQuickCheckOut = useCallback(async () => {
     const todayIso = todayLocalISODate();
-    if (date === todayIso) {
-      setCheckOut(nowLocalHHMM());
-    } else {
-      pendingQuickAction.current = "checkOut";
-      onDateChange(todayIso);
+    setFormError(null);
+    setSavedMessage(null);
+    setSaving(true);
+    try {
+      const todaySegments = await listTimeEntriesForDate(accessToken, spreadsheetId, todayIso);
+      const openEntry = todaySegments.find((s) => s.checkIn && !s.checkOut);
+      if (!openEntry) {
+        setFormError('Nessuna entrata in corso da chiudere per oggi. Usa il modulo qui sotto per aggiungere un turno completo.');
+        return;
+      }
+      const checkOutNow = nowLocalHHMM();
+      if (checkOutNow <= openEntry.checkIn) {
+        setFormError(
+          `L'orario attuale non è successivo all'entrata delle ${openEntry.checkIn}: modifica il turno a mano qui sotto.`,
+        );
+        return;
+      }
+      await saveTimeEntry(
+        accessToken,
+        spreadsheetId,
+        {
+          date: todayIso,
+          checkIn: openEntry.checkIn,
+          checkOut: checkOutNow,
+          minutesWorked: computeMinutesWorked(openEntry.checkIn, checkOutNow),
+          activityNote: openEntry.activityNote,
+          offSite: openEntry.offSite,
+          offSiteLocation: openEntry.offSiteLocation,
+          isWeekendOverride: openEntry.isWeekendOverride,
+          assignmentLink: openEntry.assignmentLink,
+          assignmentTitle: openEntry.assignmentTitle,
+        },
+        openEntry.rowNumber,
+      );
+      setSavedMessage("Uscita registrata.");
+      if (date === todayIso) {
+        setSegments(await listTimeEntriesForDate(accessToken, spreadsheetId, todayIso));
+      } else {
+        onDateChange(todayIso);
+      }
+    } catch (err) {
+      setFormError(err instanceof SheetsApiError ? err.message : "Errore nella registrazione dell'uscita.");
+    } finally {
+      setSaving(false);
     }
-  }, [date, onDateChange]);
+  }, [accessToken, spreadsheetId, date, onDateChange]);
 
   const handleEditSegment = useCallback((segment: TimeEntry) => {
     setEditingRowNumber(segment.rowNumber);
@@ -222,10 +287,10 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
       <h2>Vista giornaliera</h2>
 
       <div className="quick-actions">
-        <button type="button" className="quick-action" onClick={handleQuickCheckIn}>
+        <button type="button" className="quick-action" onClick={() => void handleQuickCheckIn()} disabled={saving}>
           Entra ora
         </button>
-        <button type="button" className="quick-action" onClick={handleQuickCheckOut}>
+        <button type="button" className="quick-action" onClick={() => void handleQuickCheckOut()} disabled={saving}>
           Esci ora
         </button>
       </div>
@@ -257,6 +322,9 @@ export function DailyTimeEntry({ accessToken, spreadsheetId, date, onDateChange 
                       <span className="segment-time">
                         {segment.checkIn}–{segment.checkOut} ({formatMinutes(segment.minutesWorked)})
                       </span>
+                    )}
+                    {segment.checkIn && !segment.checkOut && (
+                      <span className="segment-time segment-open">{segment.checkIn} → in corso</span>
                     )}
                     {segment.offSite && <span className="segment-tag">Fuori sede: {segment.offSiteLocation}</span>}
                     {segment.assignmentLink && (

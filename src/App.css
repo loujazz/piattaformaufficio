@@ -480,6 +480,10 @@ button:disabled {
   color: var(--text-h);
 }
 
+.segment-open {
+  color: var(--accent);
+}
+
 .segment-tag {
   font-size: 0.82rem;
   color: var(--text-soft);
